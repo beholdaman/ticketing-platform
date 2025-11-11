@@ -1,0 +1,9 @@
+# Changes here will be overwritten by Copier; NEVER EDIT MANUALLY
+_commit: 0.3.5
+_src_path: gh:algorandfoundation/algokit-typescript-template
+author_email: chiara.passoni6@studenti.unimi.it
+author_name: cp
+contract_name: t_uno
+preset_name: production
+project_name: t1-contracts
+

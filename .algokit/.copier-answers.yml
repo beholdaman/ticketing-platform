@@ -1,0 +1,10 @@
+# Changes here will be overwritten by Copier; NEVER EDIT MANUALLY
+_commit: 2.1.6
+_src_path: gh:algorandfoundation/algokit-fullstack-template
+author_email: chiara.passoni6@studenti.unimi.it
+author_name: cp
+cloud_provider: none
+contract_name: t_uno
+preset_name: production
+project_name: t1
+

@@ -1,0 +1,38 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - 'docs/**'
+      - '**.md'
+      - '.vscode/**'
+      - '.idea/**'
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  t1-contracts-validate:
+    name: Run t1-contracts release
+    secrets: inherit
+    uses: ./.github/workflows/t1-contracts-ci.yaml
+
+  t1-contracts-release:
+    name: Run t1-contracts release
+    secrets: inherit
+    uses: ./.github/workflows/t1-contracts-cd.yaml
+    needs: t1-contracts-validate
+
+  t1-frontend-validate:
+    name: Run t1-frontend release
+    secrets: inherit
+    uses: ./.github/workflows/t1-frontend-ci.yaml
+
+  t1-frontend-release:
+    name: Run t1-frontend release
+    secrets: inherit
+    uses: ./.github/workflows/t1-frontend-cd.yaml
+    needs: t1-frontend-validate
