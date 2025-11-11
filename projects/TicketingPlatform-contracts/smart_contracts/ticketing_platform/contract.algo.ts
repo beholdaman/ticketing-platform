@@ -58,8 +58,7 @@ export class FreeAccessTicketValue extends arc4.Struct<{
 //[FATTO] - eliminazione controlli sul appCall.sender se non necessari (o usare this.transaction.address)
 /*this.txn.sender va bene? serve per verificare la proprieta' del box */
 // - metodo swap?
-// - SCRIVERE FILE utils.ts (vedi https://github.com/VKappaKV/Caelus/blob/main/projects/Caelus/utils/helpers/admin.ts)
-/*forse i test funzioneranno dopo questo? */
+
 //[FATTO] aggiustare uso di opt in implicito
 /*la transazioni in argomento sono eseguite prima della chiamata alla app
   per cui se provo a comprare un asset senza opt in la transazione semplicemente fallisce.
