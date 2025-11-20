@@ -1,11 +1,15 @@
-import { Config } from '@algorandfoundation/algokit-utils'
+import { AlgorandClient, Config, getAccountInformation } from '@algorandfoundation/algokit-utils'
 import { registerDebugEventHandlers } from '@algorandfoundation/algokit-utils-debug'
 import { algorandFixture } from '@algorandfoundation/algokit-utils/testing'
-import { Address } from 'algosdk'
+import { Address, makeApplicationOptInTxnFromObject, waitForConfirmation, OnApplicationComplete, Account } from 'algosdk'
 import { beforeAll, beforeEach, describe, expect, test } from 'vitest'
-import { TicketingPlatformFactory } from '../artifacts/t_uno/TicketingPlatformClient'
+import { TicketingPlatformFactory } from '../artifacts/ticketing_platform/TicketingPlatformClient'
 
 import { AlgoAmount } from '@algorandfoundation/algokit-utils/types/amount'
+import { AlgoConfig } from '@algorandfoundation/algokit-utils/types/network-client'
+import { Uint64 } from '@algorandfoundation/algorand-typescript-testing/impl/primitives'
+import { AppClient } from '@algorandfoundation/algokit-utils/types/app-client'
+import { TransactionSignerAccount } from '@algorandfoundation/algokit-utils/types/account'
 
 
 
@@ -20,19 +24,32 @@ describe('TicketingPlatform contract', () => {
     })
     registerDebugEventHandlers()
   })
-  beforeEach(localnet.newScope)
+  beforeEach(localnet.newScope, 5_000)
+
+  const algodConfig = {
+    server: 'http://localhost/',
+    port: 4001,
+    token: 'a'.repeat(64),
+    network: localnet
+
+  }
+  const algodClient = AlgorandClient.fromConfig({algodConfig}).client.algod;
 
   
+  
 
-  const deploy = async (account: Address) => {
+  const deploy = async (account: Account & TransactionSignerAccount) => {
     const factory = localnet.algorand.client.getTypedAppFactory(TicketingPlatformFactory, {
-      defaultSender: account,
+      defaultSender: account.addr,
+      defaultSigner: account.signer,
     })
 
     const { appClient } = await factory.deploy({
       onUpdate: 'append',
       onSchemaBreak: 'append',
     })
+    localnet.algorand.account.ensureFunded(appClient.appAddress, account.addr, AlgoAmount.MicroAlgos(100_000))
+
     return { client: appClient }
   }
 
@@ -63,21 +80,30 @@ describe('TicketingPlatform contract', () => {
 
   test('optIn', async() => {
     const {testAccount, algorand} = localnet.context;
+    //const amount = await algodClient.accountInformation(testAccount.addr).do().amount();
     const {client} = await deploy(testAccount);
     const optInMbr = 100_000;
-    const asset = await client.send.mintNft({
-      args: {
-        sender: testAccount.addr.toString(),
-        assetName: 'asset1',
-        ticketLink: 'https://google.com'
-      },
-      populateAppCallResources: true,
-      extraFee: AlgoAmount.MicroAlgo(100_000)
-  })
-    const seller = testAccount;
     
+  
+    const balance = (await algorand.account.getInformation(testAccount)).balance
+    console.log('test account balance', balance);
+
+    const appBalance = (await algorand.account.getInformation(client.appClient.appAddress)).balance
+    console.log('app balance', appBalance);
     
-    //const seller = await algorand.account.fromKmd('seller');
+    const asset = await algorand.send.assetCreate({
+        sender: testAccount,
+        assetName: 'asset',
+        url: 'https://google.com',
+        total: BigInt(2),
+        decimals: 0,
+        manager: testAccount,
+        reserve: testAccount,
+        freeze: testAccount,
+        clawback: testAccount,
+        extraFee: AlgoAmount.MicroAlgo(1_000)
+    }
+  )
    
     const payTxn = await algorand.createTransaction.payment({
       sender: testAccount.addr,
@@ -86,20 +112,79 @@ describe('TicketingPlatform contract', () => {
     })
 
     // extract the minted asset id from the mint call return
-    const assetId: bigint = (asset as any).return ?? BigInt((asset as any).groupId ?? 0)
+    //const assetId: bigint = (asset as any).return ?? BigInt((asset as any).groupId ?? 0)
+    
 
     const result = await client.send.optInToAsset({
       args: {
-        asset: assetId,
+        asset: asset.assetId,
         mbrPay: payTxn
       },
-      populateAppCallResources: true
+      populateAppCallResources: true,
+      extraFee: AlgoAmount.MicroAlgos(1_000) //to cover inner transaction cost
     })
 
     // verify the app reports it is opted in to the asset
-    const check = await client.send.isOptedInTo({ args: { asset: assetId } })
+    const check = await client.send.isOptedInTo({ args: { asset: asset.assetId } })
     expect(check.return).toBe(true)
-
     
   })
+
+   test('optInShouldFailWithLowMbr', async() => {
+
+     const {testAccount, algorand} = localnet.context;
+    //const amount = await algodClient.accountInformation(testAccount.addr).do().amount();
+    const {client} = await deploy(testAccount);
+    const optInMbr = 100_000;
+    
+  
+    const balance = (await algorand.account.getInformation(testAccount)).balance
+    console.log('test account balance', balance);
+
+    const appBalance = (await algorand.account.getInformation(client.appClient.appAddress)).balance
+    console.log('app balance', appBalance);
+    
+    const asset = await algorand.send.assetCreate({
+        sender: testAccount,
+        assetName: 'asset',
+        url: 'https://google.com',
+        total: BigInt(2),
+        decimals: 0,
+        manager: testAccount,
+        reserve: testAccount,
+        freeze: testAccount,
+        clawback: testAccount
+    }
+  )
+   
+    const payTxn = await algorand.createTransaction.payment({
+      sender: testAccount.addr,
+      receiver: client.appAddress,
+      amount: AlgoAmount.MicroAlgos(optInMbr - 1)
+    })
+
+    // extract the minted asset id from the mint call return
+    //const assetId: bigint = (asset as any).return ?? BigInt((asset as any).groupId ?? 0)
+    
+
+    await expect(() => client.send.optInToAsset({
+      args: {
+        asset: asset.assetId,
+        mbrPay: payTxn
+      },
+      populateAppCallResources: true,
+      extraFee: AlgoAmount.MicroAlgos(1_000) //to cover inner transaction cost
+    })
+  ).rejects.toThrowError('minimum balance requirement for opt in is not met');
+    
+
+    // verify the app reports it is opted in to the asset
+    const check = await client.send.isOptedInTo({ args: { asset: asset.assetId } })
+    expect(check.return).toBe(false)
+
+  })
+
 })
+
+
+ 

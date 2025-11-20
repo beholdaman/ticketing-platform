@@ -99,9 +99,9 @@ export class TicketingPlatform extends arc4.Contract {
   }
 
   @arc4.abimethod()
-  public mintNft(sender: Account, assetName: string, ticket_link: string): uint64{
+  public mintNft(assetName: string, ticket_link: string): uint64{
     const result = itxn.assetConfig({
-      sender: sender,
+      sender: Global.currentApplicationAddress,
       assetName: assetName,
       url: ticket_link,
       total: 1,
@@ -110,7 +110,7 @@ export class TicketingPlatform extends arc4.Contract {
       reserve: Txn.sender,
       freeze: Txn.sender,
       clawback: Txn.sender,
-      fee: Global.minTxnFee
+      fee: 1_000
     }).submit();
 
     return result.createdAsset.id;
@@ -132,15 +132,16 @@ export class TicketingPlatform extends arc4.Contract {
     assert(!Global.currentApplicationAddress.isOptedIn(asset));
 
     assert(mbrPay.receiver===Global.currentApplicationAddress);
-    assert(mbrPay.amount===Global.assetOptInMinBalance)
+    assert(mbrPay.amount===Global.assetOptInMinBalance, 'minimum balance requirement for opt in is not met')
 
     //effettua una transazione di opt-in 
     // (asset transfer vuota da contratto a contratto per l'asset desiderato)
     itxn.assetTransfer({
       xferAsset: asset,
-      assetSender: Global.callerApplicationAddress,
+      assetSender: Global.currentApplicationAddress,
       assetReceiver: Global.currentApplicationAddress,
       assetAmount: 0,
+      fee: 0
     }).submit();
 
     

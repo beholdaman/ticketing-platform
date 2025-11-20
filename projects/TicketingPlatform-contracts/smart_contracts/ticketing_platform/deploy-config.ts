@@ -1,5 +1,5 @@
 import { AlgorandClient } from '@algorandfoundation/algokit-utils'
-import { TicketingPlatformFactory } from '../artifacts/t_uno/TicketingPlatformClient'
+import { TicketingPlatformFactory } from '../artifacts/ticketing_platform/TicketingPlatformClient'
 
 // Below is a showcase of various deployment options you can use in TypeScript Client
 export async function deploy() {

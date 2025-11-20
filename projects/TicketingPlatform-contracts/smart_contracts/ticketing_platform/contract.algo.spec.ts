@@ -1032,7 +1032,6 @@ test('mintNFTSuccess', () => {
   const app = ctx.ledger.getApplicationForContract(contract);
 
   const nft = contract.mintNft(
-    seller,
     'ticket1',
     'https://google.com'
   )
