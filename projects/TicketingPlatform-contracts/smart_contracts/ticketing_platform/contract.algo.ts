@@ -129,9 +129,9 @@ export class TicketingPlatform extends arc4.Contract {
     //posso farla chiamare sempre da newListing?
 
     //controllo che il contratto non abbia gia' fatto opt-in all'asset desiderato
-    assert(!Global.currentApplicationAddress.isOptedIn(asset));
+    assert(!Global.currentApplicationAddress.isOptedIn(asset), 'contract already opted in to asset');
 
-    assert(mbrPay.receiver===Global.currentApplicationAddress);
+    assert(mbrPay.receiver===Global.currentApplicationAddress, 'receiver of the payment is not the contract');
     assert(mbrPay.amount===Global.assetOptInMinBalance, 'minimum balance requirement for opt in is not met')
 
     //effettua una transazione di opt-in 
@@ -506,6 +506,10 @@ export class TicketingPlatform extends arc4.Contract {
 
   public isOptedInTo(asset: Asset): boolean {
     return Global.currentApplicationAddress.isOptedIn(asset);
+  }
+
+  public getBoxValue(key: AssignedTicketKey): AssignedTicketValue {
+    return this.assignedTicketlistings(key).value;
   }
 
  
