@@ -154,7 +154,7 @@ export class TicketingPlatform extends arc4.Contract {
     //assert(Global.currentApplicationAddress.isOptedIn(xfer.xferAsset));
 
     //il prezzo non puo' essere 0
-    assert(unitaryPrice.native > 0);
+    assert(unitaryPrice.native > 0, 'price cannot be negative');
 
     
     const key = new AssignedTicketKey({
@@ -508,8 +508,18 @@ export class TicketingPlatform extends arc4.Contract {
     return Global.currentApplicationAddress.isOptedIn(asset);
   }
 
-  public getBoxValue(key: AssignedTicketKey): AssignedTicketValue {
+  public getBoxValue(asset: Asset): AssignedTicketValue {
+    const key = new AssignedTicketKey({
+      asset: new arc4.UintN64(asset.id)
+    })
     return this.assignedTicketlistings(key).value;
+  }
+
+  public boxExists(asset: Asset): boolean {
+    const key = new AssignedTicketKey({
+      asset: new arc4.UintN64(asset.id)
+    })
+    return this.assignedTicketlistings(key).exists
   }
 
  
