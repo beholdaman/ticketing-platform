@@ -138,6 +138,16 @@ describe('TicketingPlatform contract', () => {
 
     expect(check.return).toEqual(true)*/
     const contractAddress = getApplicationAddress(client.appClient.appId);
+
+    const result = await client.send.isOptedInTo({args: {asset: asset.assetId}});
+    const balanceAfterOptIn = (await algorand.account.getInformation(testAccount)).balance
+    const appBalanceAfterOptIn = (await algorand.account.getInformation(client.appClient.appAddress)).balance
+
+    expect(result.return).toBe(true);
+    expect(balance).toEqual(1_000_000);
+    expect(balanceAfterOptIn).toEqual(1_000_000 - optInMbr);
+    expect(appBalanceAfterOptIn).toEqual(optInMbr);
+
     
   })
 
@@ -191,7 +201,13 @@ describe('TicketingPlatform contract', () => {
 
     // verify the app reports it is opted in to the asset
     const check = await client.send.isOptedInTo({ args: { asset: asset.assetId } })
-    expect(check.return).toBe(false)
+    expect(check.return).toBe(false);
+
+    const balanceAfterOptIn = (await algorand.account.getInformation(testAccount)).balance
+    const appBalanceAfterOptIn = (await algorand.account.getInformation(client.appClient.appAddress)).balance
+
+    expect(balanceAfterOptIn.microAlgos).toEqual(balance.microAlgos);
+    expect(appBalanceAfterOptIn.microAlgos).toEqual(appBalance.microAlgos);
 
   })
 
@@ -267,7 +283,13 @@ describe('TicketingPlatform contract', () => {
 
     // verify the app reports it is opted in to the asset
     const check = await client.send.isOptedInTo({ args: { asset: asset.assetId } })
-    expect(check.return).toBe(true)
+    expect(check.return).toBe(true);
+
+    const balanceAfterOptIn = (await algorand.account.getInformation(testAccount)).balance
+    const appBalanceAfterOptIn = (await algorand.account.getInformation(client.appClient.appAddress)).balance
+
+    expect(balanceAfterOptIn.microAlgos).toEqual(balance.microAlgos - BigInt(optInMbr));
+    expect(appBalanceAfterOptIn.microAlgos).toEqual(appBalance.microAlgos + BigInt(optInMbr));
 
   })
 
@@ -320,7 +342,13 @@ describe('TicketingPlatform contract', () => {
 
     // verify the app reports it is opted in to the asset
     const check = await client.send.isOptedInTo({ args: { asset: asset.assetId } })
-    expect(check.return).toBe(false)
+    expect(check.return).toBe(false);
+
+    const balanceAfterOptIn = (await algorand.account.getInformation(testAccount)).balance
+    const appBalanceAfterOptIn = (await algorand.account.getInformation(client.appClient.appAddress)).balance
+
+    expect(balanceAfterOptIn.microAlgos).toEqual(balance.microAlgos);
+    expect(appBalanceAfterOptIn.microAlgos).toEqual(appBalance.microAlgos);
 
   })
 
@@ -331,6 +359,9 @@ describe('TicketingPlatform contract', () => {
     const {client} = await deploy(testAccount);
     const optInMbr = 100_000;
     const listingMbr = (await client.send.listingBoxMbr()).return?.microAlgo().valueOf()!;
+
+    const balance = (await algorand.account.getInformation(testAccount)).balance
+    const appBalance = (await algorand.account.getInformation(client.appClient.appAddress)).balance
 
 
     const asset = await algorand.send.assetCreate({
@@ -398,6 +429,12 @@ describe('TicketingPlatform contract', () => {
   //expect((await client.send.getBoxValue({args: {key: key}})).return?.owner).toEqual(testAccount);
   //const value = client.state.box.assignedTicketlistings.value(key);
 
+  const balanceAfterNewListing = (await algorand.account.getInformation(testAccount)).balance
+  const appBalanceAfterNewListing = (await algorand.account.getInformation(client.appClient.appAddress)).balance
+
+  expect(balanceAfterNewListing.microAlgos).toEqual(balance.microAlgos - BigInt(listingMbr));
+  expect(appBalanceAfterNewListing.microAlgos).toEqual(appBalance.microAlgos + BigInt(listingMbr));
+
 
 })
 
@@ -408,6 +445,9 @@ describe('TicketingPlatform contract', () => {
     const {client} = await deploy(testAccount);
     const optInMbr = 100_000;
     const listingMbr = (await client.send.listingBoxMbr()).return?.microAlgo().valueOf()!
+
+    const balance = (await algorand.account.getInformation(testAccount)).balance
+    const appBalance = (await algorand.account.getInformation(client.appClient.appAddress)).balance
 
     const asset = await algorand.send.assetCreate({
         sender: testAccount.addr,
@@ -481,6 +521,14 @@ describe('TicketingPlatform contract', () => {
     const key = new AssignedTicketKey({
       asset: new arc4.UintN64(asset.assetId)
     });
+
+    const balanceAfterNewListing = (await algorand.account.getInformation(testAccount)).balance
+  const appBalanceAfterNewListing = (await algorand.account.getInformation(client.appClient.appAddress)).balance
+
+  expect(balanceAfterNewListing.microAlgos).toEqual(balance.microAlgos);
+  expect(appBalanceAfterNewListing.microAlgos).toEqual(appBalance.microAlgos);
+
+
   })
 
   test('newListingShouldFailIfListingAlreadyExists', async () => {
@@ -490,6 +538,11 @@ describe('TicketingPlatform contract', () => {
     const {client} = await deploy(testAccount);
     const optInMbr = 100_000;
     const listingMbr = (await client.send.listingBoxMbr()).return?.microAlgo().valueOf()!
+
+    
+    const balance = (await algorand.account.getInformation(testAccount)).balance
+    const appBalance = (await algorand.account.getInformation(client.appClient.appAddress)).balance
+
 
     const asset = await algorand.send.assetCreate({
         sender: testAccount.addr,
@@ -594,6 +647,12 @@ describe('TicketingPlatform contract', () => {
     expect(optedIn.return).toEqual(true);
     expect(result.return?.owner).toEqual(testAccount);
     expect(result.return?.unitaryPrice).toEqual(1_111);
+
+  const balanceAfterNewListing = (await algorand.account.getInformation(testAccount)).balance
+  const appBalanceAfterNewListing = (await algorand.account.getInformation(client.appClient.appAddress)).balance
+
+  expect(balanceAfterNewListing.microAlgos).toEqual(balance.microAlgos);
+  expect(appBalanceAfterNewListing.microAlgos).toEqual(appBalance.microAlgos);
     
 
 
@@ -606,6 +665,10 @@ describe('TicketingPlatform contract', () => {
     const {client} = await deploy(testAccount);
     const optInMbr = 100_000;
     const listingMbr = (await client.send.listingBoxMbr()).return?.microAlgo().valueOf()!
+
+    const balance = (await algorand.account.getInformation(testAccount)).balance
+    const appBalance = (await algorand.account.getInformation(client.appClient.appAddress)).balance
+
 
     const asset = await algorand.send.assetCreate({
         sender: testAccount.addr,
@@ -690,6 +753,14 @@ describe('TicketingPlatform contract', () => {
 
     expect(optedIn.return).toEqual(true);
     expect(listingExists).toBe(false);
+
+    
+  const balanceAfterNewListing = (await algorand.account.getInformation(testAccount)).balance
+  const appBalanceAfterNewListing = (await algorand.account.getInformation(client.appClient.appAddress)).balance
+
+  expect(balanceAfterNewListing.microAlgos).toEqual(balance.microAlgos);
+  expect(appBalanceAfterNewListing.microAlgos).toEqual(appBalance.microAlgos);
+    
    
 
   });
@@ -702,6 +773,10 @@ describe('TicketingPlatform contract', () => {
     const {client} = await deploy(testAccount);
     const optInMbr = 100_000;
     const listingMbr = (await client.send.listingBoxMbr()).return?.microAlgo().valueOf()!
+
+     const balance = (await algorand.account.getInformation(testAccount)).balance
+    const appBalance = (await algorand.account.getInformation(client.appClient.appAddress)).balance
+
 
     const asset = await algorand.send.assetCreate({
         sender: testAccount.addr,
@@ -787,6 +862,13 @@ describe('TicketingPlatform contract', () => {
     expect(optedIn.return).toEqual(true);
     expect(listingExists).toBe(false);
 
+    const balanceAfterNewListing = (await algorand.account.getInformation(testAccount)).balance
+  const appBalanceAfterNewListing = (await algorand.account.getInformation(client.appClient.appAddress)).balance
+
+  expect(balanceAfterNewListing.microAlgos).toEqual(balance.microAlgos);
+  expect(appBalanceAfterNewListing.microAlgos).toEqual(appBalance.microAlgos);
+    
+
   });
 
   //'Asset receiver is not the application'
@@ -798,6 +880,12 @@ describe('TicketingPlatform contract', () => {
     const optInMbr = 100_000;
     const listingMbr = (await client.send.listingBoxMbr()).return?.microAlgo().valueOf()!
     const other =  algorand.account.random();
+
+    const balance = (await algorand.account.getInformation(testAccount)).balance
+    const appBalance = (await algorand.account.getInformation(client.appClient.appAddress)).balance
+
+
+    
 
     const asset = await algorand.send.assetCreate({
         sender: testAccount.addr,
@@ -880,6 +968,12 @@ describe('TicketingPlatform contract', () => {
     expect(optedIn.return).toEqual(true);
     expect(listingExists).toBe(false);
 
+      const balanceAfterNewListing = (await algorand.account.getInformation(testAccount)).balance
+  const appBalanceAfterNewListing = (await algorand.account.getInformation(client.appClient.appAddress)).balance
+
+  expect(balanceAfterNewListing.microAlgos).toEqual(balance.microAlgos);
+  expect(appBalanceAfterNewListing.microAlgos).toEqual(appBalance.microAlgos);
+
   });
 
   //Asset must be unique
@@ -891,6 +985,9 @@ describe('TicketingPlatform contract', () => {
     const optInMbr = 100_000;
     const listingMbr = (await client.send.listingBoxMbr()).return?.microAlgo().valueOf()!
     const other =  algorand.account.random();
+
+     const balance = (await algorand.account.getInformation(testAccount)).balance
+    const appBalance = (await algorand.account.getInformation(client.appClient.appAddress)).balance
 
     const asset = await algorand.send.assetCreate({
         sender: testAccount.addr,
@@ -972,6 +1069,13 @@ describe('TicketingPlatform contract', () => {
 
     expect(optedIn.return).toEqual(true);
     expect(listingExists).toBe(false);
+
+        const balanceAfterNewListing = (await algorand.account.getInformation(testAccount)).balance
+  const appBalanceAfterNewListing = (await algorand.account.getInformation(client.appClient.appAddress)).balance
+
+
+    expect(balanceAfterNewListing.microAlgos).toEqual(balance.microAlgos);
+  expect(appBalanceAfterNewListing.microAlgos).toEqual(appBalance.microAlgos);
 
   })
 

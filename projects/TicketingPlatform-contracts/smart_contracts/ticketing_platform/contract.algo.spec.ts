@@ -3,6 +3,7 @@ import { TestExecutionContext } from '@algorandfoundation/algorand-typescript-te
 import { appOptedIn } from '@algorandfoundation/algorand-typescript/op'
 import { afterEach, describe, expect, test } from 'vitest'
 import { AssignedTicketKey, TicketingPlatform } from './contract.algo'
+import { ByteLengthQueuingStrategy } from 'node:stream/web'
 
 const TEST_DECIMALS = 6
 
@@ -952,7 +953,8 @@ describe('ticketingPlatform', () => {
     const asset = ctx.any.asset({decimals: TEST_DECIMALS});
     const asset1 = ctx.any.asset();
     const seller = ctx.any.account({balance: 2_000_000, optedAssetBalances: new Map([[asset.id, 1]])});
-    const buyer = ctx.any.account({balance: 2_000_000, optedAssetBalances: new Map([[asset1.id, 1]])});
+    const buyer = ctx.any.account({balance: 1_000_000, optedAssetBalances: new Map([[asset1.id, 1]])});
+    const other = ctx.any.account();
 
     const app = ctx.ledger.getApplicationForContract(contract);
 
@@ -1009,15 +1011,15 @@ describe('ticketingPlatform', () => {
   expect(ctx.txn.lastGroup.getItxnGroup(0).getAssetTransferInnerTxn().xferAsset).
         toEqual(asset); //il listing mbr
     expect(ctx.txn.lastGroup.getItxnGroup(0).getAssetTransferInnerTxn().assetReceiver).
-        toEqual(buyer); //ridato al venditore
+        toStrictEqual(buyer); //ridato al venditore
     expect(ctx.txn.lastGroup.getItxnGroup(0).getAssetTransferInnerTxn().assetSender).
-        toEqual(seller);
+        toStrictEqual(seller);
 
   expect(ctx.txn.lastGroup.getItxnGroup().getPaymentInnerTxn().amount).
         toEqual(listingMbr); //il listing mbr
     expect(ctx.txn.lastGroup.getItxnGroup().getPaymentInnerTxn().receiver).
         toEqual(seller); //ridato al venditore
-    expect(ctx.txn.lastGroup.getItxnGroup().getPaymentInnerTxn().receiver).
+    expect(ctx.txn.lastGroup.getItxnGroup().getPaymentInnerTxn().sender).
         toEqual(app.address);
   
 });
@@ -1038,6 +1040,69 @@ test('mintNFTSuccess', () => {
 
   console.log(nft);
   
+
+})
+
+test('withdrawAssetSuccess', async () => {
+
+   const contract = ctx.contract.create(TicketingPlatform);
+    const asset = ctx.any.asset({decimals: TEST_DECIMALS});
+    const asset1 = ctx.any.asset();
+    const seller = ctx.any.account({balance: 2_000_000, optedAssetBalances: new Map([[asset.id, 1]])});
+    const buyer = ctx.any.account({balance: 2_000_000, optedAssetBalances: new Map([[asset1.id, 1]])});
+
+    const app = ctx.ledger.getApplicationForContract(contract);
+
+    const price = new arc4.UintN64(1_234);
+
+    ctx.txn.createScope([ctx.any.txn.applicationCall({
+      sender: seller,
+      appId: contract
+    })]).
+    execute(() => {
+    contract.optInToAsset(
+      asset,
+      ctx.any.txn.payment({
+        amount: optInMbr,
+        receiver: app.address,
+        sender: seller
+      })
+    )
+    contract.newListing(
+      ctx.any.txn.assetTransfer({
+        xferAsset: asset,
+        assetSender: seller,
+        assetReceiver: app.address,
+        assetAmount: 1
+      }),
+      price,
+      ctx.any.txn.payment({
+        amount: listingMbr,
+        receiver: app.address
+      })
+    ),
+    contract.withdrawAsset(asset)
+  });
+
+  const key = new AssignedTicketKey({
+    asset: new arc4.UintN64(asset.id)
+  });
+
+  expect(contract.assignedTicketlistings(key).exists).toBe(false);
+
+   expect(ctx.txn.lastGroup.getItxnGroup(0).getAssetTransferInnerTxn().xferAsset).
+        toEqual(asset); //il listing mbr
+    expect(ctx.txn.lastGroup.getItxnGroup(0).getAssetTransferInnerTxn().assetReceiver).
+        toEqual(seller); //ridato al venditore
+    expect(ctx.txn.lastGroup.getItxnGroup(0).getAssetTransferInnerTxn().assetSender).
+        toEqual(app.address);
+
+     expect(ctx.txn.lastGroup.getItxnGroup().getPaymentInnerTxn().amount).
+        toEqual(listingMbr); //il listing mbr
+    expect(ctx.txn.lastGroup.getItxnGroup().getPaymentInnerTxn().receiver).
+        toEqual(seller); //ridato al venditore
+    expect(ctx.txn.lastGroup.getItxnGroup().getPaymentInnerTxn().sender).
+        toEqual(app.address);
 
 })
 
