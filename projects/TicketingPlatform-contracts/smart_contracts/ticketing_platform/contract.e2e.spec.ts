@@ -1079,7 +1079,269 @@ describe('TicketingPlatform contract', () => {
 
   })
 
+  test('changePriceSuccess', async () => {
 
+   const {testAccount, algorand} = localnet.context;
+    //const amount = await algodClient.accountInformation(testAccount.addr).do().amount();
+    const {client} = await deploy(testAccount);
+    const optInMbr = 100_000;
+    const listingMbr = (await client.send.listingBoxMbr()).return?.microAlgo().valueOf()!;
+
+    const balance = (await algorand.account.getInformation(testAccount)).balance
+    const appBalance = (await algorand.account.getInformation(client.appClient.appAddress)).balance
+
+
+    const asset = await algorand.send.assetCreate({
+        sender: testAccount.addr,
+        assetName: 'asset',
+        url: 'https://google.com',
+        total: BigInt(2),
+        decimals: 0,
+        manager: testAccount.addr,
+        reserve: testAccount.addr,
+        freeze: testAccount.addr,
+        clawback: client.appClient.appAddress,
+        extraFee: AlgoAmount.MicroAlgo(1_000)
+    }
+  )
+   
+    const payTxn = await algorand.createTransaction.payment({
+      sender: testAccount.addr,
+      receiver: client.appAddress,
+      amount: AlgoAmount.MicroAlgos(optInMbr)
+    })
+
+    // extract the minted asset id from the mint call return
+    //const assetId: bigint = (asset as any).return ?? BigInt((asset as any).groupId ?? 0)
+    
+
+    const optIn = await client.createTransaction.optInToAsset({
+      args: {
+        asset: asset.assetId,
+        mbrPay: payTxn
+      },
+      //populateAppCallResources: true,
+      extraFee: AlgoAmount.MicroAlgos(1_000) //to cover inner transaction cost
+    })
+
+    
+
+    const xfer = algorand.createTransaction.assetTransfer({
+      receiver: client.appAddress,
+      sender: testAccount,
+      amount: BigInt(1),
+      assetId: asset.assetId,
+    })
+
+    const mbrPay = algorand.createTransaction.payment({
+      amount: AlgoAmount.MicroAlgo(listingMbr),
+      receiver: client.appAddress,
+      sender: testAccount
+    });
+
+    const newListing = await client.createTransaction.newListing({ 
+      args: {
+        xfer: xfer,
+        unitaryPrice: 1_234,
+        mbrPay: mbrPay
+      },
+      extraFee: AlgoAmount.MicroAlgos(1_000)
+    })
+
+
+  const price = (await client.send.getBoxValue({args: {asset: asset.assetId}})).return?.unitaryPrice
+  expect(price).toEqual(1_234)
+
+  
+  const changePrice = await client.send.changePrice({
+    args: {
+      asset: asset.assetId,
+      newPrice: 6_789
+    }
+  })
+
+  const newPrice = (await client.send.getBoxValue({args: {asset: asset.assetId}})).return?.unitaryPrice
+  expect(newPrice).toEqual(6_789)
+
+  })
+
+  test('changePriceShouldFailIfListingDoesNotExists', async () => {
+
+     const {testAccount, algorand} = localnet.context;
+    //const amount = await algodClient.accountInformation(testAccount.addr).do().amount();
+    const {client} = await deploy(testAccount);
+    const optInMbr = 100_000;
+    const listingMbr = (await client.send.listingBoxMbr()).return?.microAlgo().valueOf()!;
+
+    const balance = (await algorand.account.getInformation(testAccount)).balance
+    const appBalance = (await algorand.account.getInformation(client.appClient.appAddress)).balance
+
+
+    const asset = await algorand.send.assetCreate({
+        sender: testAccount.addr,
+        assetName: 'asset',
+        url: 'https://google.com',
+        total: BigInt(2),
+        decimals: 0,
+        manager: testAccount.addr,
+        reserve: testAccount.addr,
+        freeze: testAccount.addr,
+        clawback: client.appClient.appAddress,
+        extraFee: AlgoAmount.MicroAlgo(1_000)
+    }
+  )
+   
+    const payTxn = await algorand.createTransaction.payment({
+      sender: testAccount.addr,
+      receiver: client.appAddress,
+      amount: AlgoAmount.MicroAlgos(optInMbr)
+    })
+
+    // extract the minted asset id from the mint call return
+    //const assetId: bigint = (asset as any).return ?? BigInt((asset as any).groupId ?? 0)
+    
+
+    const optIn = await client.createTransaction.optInToAsset({
+      args: {
+        asset: asset.assetId,
+        mbrPay: payTxn
+      },
+      //populateAppCallResources: true,
+      extraFee: AlgoAmount.MicroAlgos(1_000) //to cover inner transaction cost
+    })
+
+    
+
+    const xfer = algorand.createTransaction.assetTransfer({
+      receiver: client.appAddress,
+      sender: testAccount,
+      amount: BigInt(1),
+      assetId: asset.assetId,
+    })
+
+    const mbrPay = algorand.createTransaction.payment({
+      amount: AlgoAmount.MicroAlgo(listingMbr),
+      receiver: client.appAddress,
+      sender: testAccount
+    });
+
+    const newListing = await client.createTransaction.newListing({ 
+      args: {
+        xfer: xfer,
+        unitaryPrice: 1_234,
+        mbrPay: mbrPay
+      },
+      extraFee: AlgoAmount.MicroAlgos(1_000)
+    })
+
+
+  const price = (await client.send.getBoxValue({args: {asset: asset.assetId}})).return?.unitaryPrice
+  expect(price).toEqual(1_234)
+
+  
+  expect( await client.send.changePrice({
+    args: {
+      asset: BigInt(88888), //asset senza listing
+      newPrice: 6_789
+    }
+  })).rejects.toThrowError('Listing for given asset does not exist');
+
+  
+
+  const newPrice = (await client.send.getBoxValue({args: {asset: asset.assetId}})).return?.unitaryPrice
+  expect(newPrice).toEqual(1_234)
+
+  })
+
+  test('chanegPriceShouldFailIfCallerIsNotSeller', async () => {
+
+    const {testAccount, algorand} = localnet.context;
+    //const amount = await algodClient.accountInformation(testAccount.addr).do().amount();
+    const {client} = await deploy(testAccount);
+    const optInMbr = 100_000;
+    const listingMbr = (await client.send.listingBoxMbr()).return?.microAlgo().valueOf()!;
+    const other = await algorand.account.random();
+
+    const balance = (await algorand.account.getInformation(testAccount)).balance
+    const appBalance = (await algorand.account.getInformation(client.appClient.appAddress)).balance
+
+
+    const asset = await algorand.send.assetCreate({
+        sender: testAccount.addr,
+        assetName: 'asset',
+        url: 'https://google.com',
+        total: BigInt(2),
+        decimals: 0,
+        manager: testAccount.addr,
+        reserve: testAccount.addr,
+        freeze: testAccount.addr,
+        clawback: client.appClient.appAddress,
+        extraFee: AlgoAmount.MicroAlgo(1_000)
+    }
+  )
+   
+    const payTxn = await algorand.createTransaction.payment({
+      sender: testAccount.addr,
+      receiver: client.appAddress,
+      amount: AlgoAmount.MicroAlgos(optInMbr)
+    })
+
+    // extract the minted asset id from the mint call return
+    //const assetId: bigint = (asset as any).return ?? BigInt((asset as any).groupId ?? 0)
+    
+
+    const optIn = await client.createTransaction.optInToAsset({
+      args: {
+        asset: asset.assetId,
+        mbrPay: payTxn
+      },
+      //populateAppCallResources: true,
+      extraFee: AlgoAmount.MicroAlgos(1_000) //to cover inner transaction cost
+    })
+
+    
+
+    const xfer = algorand.createTransaction.assetTransfer({
+      receiver: client.appAddress,
+      sender: testAccount,
+      amount: BigInt(1),
+      assetId: asset.assetId,
+    })
+
+    const mbrPay = algorand.createTransaction.payment({
+      amount: AlgoAmount.MicroAlgo(listingMbr),
+      receiver: client.appAddress,
+      sender: testAccount
+    });
+
+    const newListing = await client.createTransaction.newListing({ 
+      args: {
+        xfer: xfer,
+        unitaryPrice: 1_234,
+        mbrPay: mbrPay
+      },
+      extraFee: AlgoAmount.MicroAlgos(1_000)
+    })
+
+
+  const price = (await client.send.getBoxValue({args: {asset: asset.assetId}})).return?.unitaryPrice
+  expect(price).toEqual(1_234)
+
+  
+  expect( await client.send.changePrice({
+    args: {
+      asset: BigInt(88888), //asset senza listing
+      newPrice: 6_789
+    },
+    sender: other
+  })).rejects.toThrowError('Only the owner of this listing can change its price');
+
+  
+
+  const newPrice = (await client.send.getBoxValue({args: {asset: asset.assetId}})).return?.unitaryPrice
+  expect(newPrice).toEqual(1_234)
+
+  })
 
 
 })
