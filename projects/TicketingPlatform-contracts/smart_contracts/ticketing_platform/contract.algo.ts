@@ -326,6 +326,7 @@ export class TicketingPlatform extends arc4.Contract {
     //invia l'asset desiderato al chiamante del metodo (o al pagante?)
     itxn.assetTransfer({
       xferAsset: asset,
+      assetSender: owner.native,
       assetReceiver: Txn.sender,
       assetAmount: 1,
       fee: 0
