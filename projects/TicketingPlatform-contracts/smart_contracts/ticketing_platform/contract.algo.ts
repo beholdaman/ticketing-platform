@@ -405,6 +405,7 @@ export class TicketingPlatform extends arc4.Contract {
 
     //trasferire asset al proprietario
     itxn.assetTransfer({
+      assetSender: Global.currentApplicationAddress,
       assetReceiver: owner,
       xferAsset: asset,
       assetAmount: 1
@@ -416,6 +417,7 @@ export class TicketingPlatform extends arc4.Contract {
 
     //recupero mbr listing (e mbr opt in?)
     itxn.payment({
+      sender: Global.currentApplicationAddress,
       receiver: owner,
       amount: this.listingBoxMbr()
     }).submit()

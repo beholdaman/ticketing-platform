@@ -4,6 +4,7 @@ import { appOptedIn } from '@algorandfoundation/algorand-typescript/op'
 import { afterEach, describe, expect, test } from 'vitest'
 import { AssignedTicketKey, TicketingPlatform } from './contract.algo'
 import { ByteLengthQueuingStrategy } from 'node:stream/web'
+import { a } from 'vitest/dist/chunks/suite.B2jumIFP'
 
 const TEST_DECIMALS = 6
 
@@ -80,10 +81,10 @@ describe('ticketingPlatform', () => {
         toEqual(0);
     expect(ctx.txn.lastGroup.getItxnGroup().getAssetTransferInnerTxn().xferAsset).
         toEqual(asset); //il mbr
-    expect(ctx.txn.lastGroup.getItxnGroup().getAssetTransferInnerTxn().assetSender).
-        toEqual(testApp.address); //dato dal seller
-    expect(ctx.txn.lastGroup.getItxnGroup().getAssetTransferInnerTxn().assetReceiver).
-        toEqual(testApp.address); //al contratto
+    expect(ctx.txn.lastGroup.getItxnGroup().getAssetTransferInnerTxn().assetSender===testApp.address).
+        toEqual(true); //dato dal seller
+    expect(ctx.txn.lastGroup.getItxnGroup().getAssetTransferInnerTxn().assetReceiver===testApp.address).
+        toEqual(true); //al contratto
           
   });
 
@@ -379,10 +380,10 @@ describe('ticketingPlatform', () => {
         toEqual(0);
     expect(ctx.txn.lastGroup.getItxnGroup().getAssetTransferInnerTxn().xferAsset).
         toEqual(asset); //il mbr
-    expect(ctx.txn.lastGroup.getItxnGroup().getAssetTransferInnerTxn().assetSender).
-        toEqual(app.address); //dato dal seller
-    expect(ctx.txn.lastGroup.getItxnGroup().getAssetTransferInnerTxn().assetReceiver).
-        toEqual(app.address); //al contratto
+    expect(ctx.txn.lastGroup.getItxnGroup().getAssetTransferInnerTxn().assetSender===app.address).
+        toEqual(true); //dato dal seller
+    expect(ctx.txn.lastGroup.getItxnGroup().getAssetTransferInnerTxn().assetReceiver===app.address).
+        toEqual(true); //al contratto
 
   });
 
@@ -422,7 +423,7 @@ describe('ticketingPlatform', () => {
 
     const value = contract.assignedTicketlistings(key).value
 
-    expect(value.owner.native).toEqual(sender);
+    expect(value.owner.native===sender).toEqual(true);
     expect(value.unitaryPrice.native).toEqual(price.native );
 
   })  
@@ -468,7 +469,7 @@ describe('ticketingPlatform', () => {
 
     const value = contract.assignedTicketlistings(key).value
 
-    expect(value.owner.native).toEqual(sender);
+    expect(value.owner.native===sender).toEqual(true);
     expect(value.unitaryPrice.native).toEqual(price.native); //method fails no price doesn't change
 
   })
@@ -531,19 +532,19 @@ describe('ticketingPlatform', () => {
     
     expect(ctx.txn.lastGroup.getItxnGroup(0).getAssetTransferInnerTxn().xferAsset).
         toEqual(asset); //asset
-    expect(ctx.txn.lastGroup.getItxnGroup(0).getAssetTransferInnerTxn().assetReceiver).
-        toEqual(buyer); //al compratore
-    expect(ctx.txn.lastGroup.getItxnGroup(0).getAssetTransferInnerTxn().assetSender).
-        toEqual(seller); //dal venditore
+    expect(ctx.txn.lastGroup.getItxnGroup(0).getAssetTransferInnerTxn().assetReceiver===buyer).
+        toEqual(true); //al compratore
+    expect(ctx.txn.lastGroup.getItxnGroup(0).getAssetTransferInnerTxn().assetSender===seller).
+        toEqual(true); //dal venditore
 
     expect(contract.assignedTicketlistings(key).exists).toBe(false);
 
     expect(ctx.txn.lastGroup.getItxnGroup(1).getPaymentInnerTxn().amount).
         toEqual(listingMbr); //il listing mbr
-    expect(ctx.txn.lastGroup.getItxnGroup(1).getPaymentInnerTxn().receiver).
-        toEqual(seller); //ridato al venditore 
-    expect(ctx.txn.lastGroup.getItxnGroup(1).getPaymentInnerTxn().sender).
-        toEqual(app.address); //dal contratto
+    expect(ctx.txn.lastGroup.getItxnGroup(1).getPaymentInnerTxn().receiver===seller).
+        toEqual(true); //ridato al venditore 
+    expect(ctx.txn.lastGroup.getItxnGroup(1).getPaymentInnerTxn().sender===app.address).
+        toEqual(true); //dal contratto
 });
 
   test('buyWithChangeSuccess', () => {
@@ -610,31 +611,31 @@ describe('ticketingPlatform', () => {
         toEqual(asset); //l'asset
     expect(ctx.txn.lastGroup.getItxnGroup(0).getAssetTransferInnerTxn().assetAmount).
         toEqual(1); //asset unico
-    expect(ctx.txn.lastGroup.getItxnGroup(0).getAssetTransferInnerTxn().assetReceiver).
-        toEqual(buyer); //dato al compratore
-    expect(ctx.txn.lastGroup.getItxnGroup(0).getAssetTransferInnerTxn().assetSender).
-        toEqual(seller); //dal venditore
+    expect(ctx.txn.lastGroup.getItxnGroup(0).getAssetTransferInnerTxn().assetReceiver===buyer).
+        toEqual(true); //dato al compratore
+    expect(ctx.txn.lastGroup.getItxnGroup(0).getAssetTransferInnerTxn().assetSender===seller).
+        toEqual(true); //dal venditore
 
     expect(ctx.txn.lastGroup.getItxnGroup(1).getPaymentInnerTxn().amount).
         toEqual(new arc4.UintN64(250).native); //il resto
-    expect(ctx.txn.lastGroup.getItxnGroup(1).getPaymentInnerTxn().receiver).
-        toEqual(buyer); //dato al compratore
-    expect(ctx.txn.lastGroup.getItxnGroup(1).getPaymentInnerTxn().sender).
-        toEqual(app.address); //dal contratto
+    expect(ctx.txn.lastGroup.getItxnGroup(1).getPaymentInnerTxn().receiver===buyer).
+        toEqual(true); //dato al compratore
+    expect(ctx.txn.lastGroup.getItxnGroup(1).getPaymentInnerTxn().sender===seller).
+        toEqual(true); //dal venditore
 
     expect(ctx.txn.lastGroup.getItxnGroup(2).getPaymentInnerTxn().amount).
         toEqual(listingMbr); //il listing mbr
-    expect(ctx.txn.lastGroup.getItxnGroup(2).getPaymentInnerTxn().receiver).
-        toEqual(seller); //ridato al venditore
-    expect(ctx.txn.lastGroup.getItxnGroup(2).getPaymentInnerTxn().sender).
-        toEqual(app.address); //dal contratto
+    expect(ctx.txn.lastGroup.getItxnGroup(2).getPaymentInnerTxn().receiver===seller).
+        toEqual(true); //ridato al venditore
+    expect(ctx.txn.lastGroup.getItxnGroup(2).getPaymentInnerTxn().sender===app.address).
+        toEqual(true); //dal contratto
     
     expect(contract.assignedTicketlistings(key).exists).toBe(false);
    
     
     const payment = ctx.txn.lastGroup.getItxnGroup().getPaymentInnerTxn();
     expect(payment.amount).toEqual(listingMbr);
-    expect(payment.receiver).toEqual(seller);
+    expect(payment.receiver===seller).toEqual(true);
         
 
   });
@@ -705,7 +706,7 @@ describe('ticketingPlatform', () => {
     //expect(asset.balance(buyer)).toEqual(new arc4.UintN64(0).native); //but purchase didn't happen
     
     const value = contract.assignedTicketlistings(key).value;
-    expect(value.owner.native).toEqual(seller);
+    expect(value.owner.native===seller).toEqual(true);
     expect(value.unitaryPrice.native).toEqual(price.native);
 
   })
@@ -774,11 +775,9 @@ describe('ticketingPlatform', () => {
     expect(contract.assignedTicketlistings(key).exists).toBe(true); 
     //listing still exists, purchase didn't happen
 
-    //expect(asset.balance(seller)).toEqual(new arc4.UintN64(0).native); //listing was created
-    //expect(asset.balance(buyer)).toEqual(new arc4.UintN64(0).native); //but purchase didn't happen
     
     const value = contract.assignedTicketlistings(key).value;
-    expect(value.owner.native).toEqual(seller);
+    expect(value.owner.native===seller).toEqual(true);
     expect(value.unitaryPrice.native).toEqual(price.native);
 
   })
@@ -948,7 +947,7 @@ describe('ticketingPlatform', () => {
 
 
 
-  test('buyWithAssets', () => {
+  test('buyWithAssetsSuccess', () => {
     const contract = ctx.contract.create(TicketingPlatform);
     const asset = ctx.any.asset({decimals: TEST_DECIMALS});
     const asset1 = ctx.any.asset();
@@ -1009,18 +1008,20 @@ describe('ticketingPlatform', () => {
   expect(contract.assignedTicketlistings(key).exists).toBe(false);
   
   expect(ctx.txn.lastGroup.getItxnGroup(0).getAssetTransferInnerTxn().xferAsset).
-        toEqual(asset); //il listing mbr
-    expect(ctx.txn.lastGroup.getItxnGroup(0).getAssetTransferInnerTxn().assetReceiver).
-        toStrictEqual(buyer); //ridato al venditore
-    expect(ctx.txn.lastGroup.getItxnGroup(0).getAssetTransferInnerTxn().assetSender).
-        toStrictEqual(seller);
+        toEqual(asset); //asset venduto
+    expect(ctx.txn.lastGroup.getItxnGroup(0).getAssetTransferInnerTxn().assetReceiver===buyer).
+        toBe(true); //dato al compratore
+    expect(ctx.txn.lastGroup.getItxnGroup(0).getAssetTransferInnerTxn().assetSender===seller).
+        toBe(true); //dal venditore
 
   expect(ctx.txn.lastGroup.getItxnGroup().getPaymentInnerTxn().amount).
         toEqual(listingMbr); //il listing mbr
-    expect(ctx.txn.lastGroup.getItxnGroup().getPaymentInnerTxn().receiver).
-        toEqual(seller); //ridato al venditore
-    expect(ctx.txn.lastGroup.getItxnGroup().getPaymentInnerTxn().sender).
-        toEqual(app.address);
+    expect(ctx.txn.lastGroup.getItxnGroup().getPaymentInnerTxn().receiver===seller).
+        toEqual(true); //ridato al venditore
+    expect(ctx.txn.lastGroup.getItxnGroup().getPaymentInnerTxn().sender===app.address).
+        toEqual(true);
+
+    
   
 });
 
@@ -1078,7 +1079,8 @@ test('withdrawAssetSuccess', async () => {
       price,
       ctx.any.txn.payment({
         amount: listingMbr,
-        receiver: app.address
+        receiver: app.address,
+        sender: seller
       })
     ),
     contract.withdrawAsset(asset)
@@ -1090,19 +1092,118 @@ test('withdrawAssetSuccess', async () => {
 
   expect(contract.assignedTicketlistings(key).exists).toBe(false);
 
-   expect(ctx.txn.lastGroup.getItxnGroup(0).getAssetTransferInnerTxn().xferAsset).
-        toEqual(asset); //il listing mbr
-    expect(ctx.txn.lastGroup.getItxnGroup(0).getAssetTransferInnerTxn().assetReceiver).
-        toEqual(seller); //ridato al venditore
-    expect(ctx.txn.lastGroup.getItxnGroup(0).getAssetTransferInnerTxn().assetSender).
-        toEqual(app.address);
+   expect(ctx.txn.lastGroup.getItxnGroup(0).getAssetTransferInnerTxn(0).xferAsset).
+        toEqual(asset); //l'asset ritirato
+    expect(ctx.txn.lastGroup.getItxnGroup(0).getAssetTransferInnerTxn(0).assetReceiver===app.address).
+       toEqual(true); //ridato al venditore 
+    expect(ctx.txn.lastGroup.getItxnGroup(0).getAssetTransferInnerTxn(0).assetSender===app.address).
+        toEqual(true); //dall'aplicazione
+    //questa e' la transazione di optIn
 
-     expect(ctx.txn.lastGroup.getItxnGroup().getPaymentInnerTxn().amount).
+     expect(ctx.txn.lastGroup.getItxnGroup(2).getPaymentInnerTxn().amount).
         toEqual(listingMbr); //il listing mbr
-    expect(ctx.txn.lastGroup.getItxnGroup().getPaymentInnerTxn().receiver).
-        toEqual(seller); //ridato al venditore
-    expect(ctx.txn.lastGroup.getItxnGroup().getPaymentInnerTxn().sender).
-        toEqual(app.address);
+    expect(ctx.txn.lastGroup.getItxnGroup(2).getPaymentInnerTxn().receiver===seller).
+        toEqual(true); //ridato al venditore
+    expect(ctx.txn.lastGroup.getItxnGroup(2).getPaymentInnerTxn().sender===app.address).
+        toEqual(true); //dal contratto
+
+    //TODO. check di asset restituito
+
+})
+//'No listing exists for given asset'
+test('withdrawShouldFailIfListingDoesNotExist', async () => {
+
+  const contract = ctx.contract.create(TicketingPlatform);
+    const asset = ctx.any.asset({decimals: TEST_DECIMALS});
+    const asset1 = ctx.any.asset();
+    const seller = ctx.any.account({balance: 2_000_000, optedAssetBalances: new Map([[asset.id, 1]])});
+    const buyer = ctx.any.account({balance: 2_000_000, optedAssetBalances: new Map([[asset1.id, 1]])});
+
+    const app = ctx.ledger.getApplicationForContract(contract);
+
+    const price = new arc4.UintN64(1_234);
+
+    ctx.txn.createScope([ctx.any.txn.applicationCall({
+      sender: seller,
+      appId: contract
+    })]).
+    execute(() => expect(() => { 
+    contract.optInToAsset(
+      asset,
+      ctx.any.txn.payment({
+        amount: optInMbr,
+        receiver: app.address,
+        sender: seller
+      })
+    ),
+    contract.withdrawAsset(asset)
+  })).toThrowError('No listing exists for given asset');
+
+  const key = new AssignedTicketKey({
+    asset: new arc4.UintN64(asset.id)
+  });
+
+  expect(contract.assignedTicketlistings(key).exists).toBe(false);
+
+
+})
+
+//'Only owner can withdraw assets'
+test('withdrawShouldFailIfCallerIsNotOwner', async () => {
+
+    const contract = ctx.contract.create(TicketingPlatform);
+    const asset = ctx.any.asset({decimals: TEST_DECIMALS});
+    const asset1 = ctx.any.asset();
+    const seller = ctx.any.account({balance: 2_000_000, optedAssetBalances: new Map([[asset.id, 1]])});
+    const buyer = ctx.any.account({balance: 2_000_000, optedAssetBalances:   new Map([[asset1.id, 1]])});
+    const other = ctx.any.account();
+
+    const app = ctx.ledger.getApplicationForContract(contract);
+
+    const price = new arc4.UintN64(1_234);
+
+    ctx.txn.createScope([ctx.any.txn.applicationCall({
+      sender: seller,
+      appId: contract
+    })]).
+    execute(() => { 
+    contract.optInToAsset(
+      asset,
+      ctx.any.txn.payment({
+        amount: optInMbr,
+        receiver: app.address,
+        sender: seller
+      })
+    ),
+    contract.newListing(
+      ctx.any.txn.assetTransfer({
+        xferAsset: asset,
+        assetSender: seller,
+        assetReceiver: app.address,
+        assetAmount: 1
+      }),
+      price,
+      ctx.any.txn.payment({
+        amount: listingMbr,
+        receiver: app.address,
+        sender: seller
+      })
+    )
+  })
+
+  ctx.txn.createScope([ctx.any.txn.applicationCall({
+      sender: other,
+      appId: contract
+    })]).
+    execute(() => expect(() => {
+      contract.withdrawAsset(asset)
+    })).toThrowError('Only owner can withdraw assets')
+
+  const key = new AssignedTicketKey({
+    asset: new arc4.UintN64(asset.id)
+  });
+
+  expect(contract.assignedTicketlistings(key).exists).toBe(true);
 
 })
 
