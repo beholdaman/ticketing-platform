@@ -24,8 +24,97 @@ describe('ticketingPlatform', () => {
     ctx.reset();
   });
 
+  test('optInSuccess', async () => {
+
+    const contract = ctx.contract.create(TicketingPlatform);
+    const asset = ctx.any.asset({decimals: TEST_DECIMALS});
+    const seller = ctx.any.account({balance: 2_000_000});
+    
+    
+    const price = new arc4.UintN64(1_234);
+    
+    //arrange
+    const testApp = ctx.ledger.getApplicationForContract(contract);
+
+     ctx.txn.createScope([ctx.any.txn.applicationCall({appId: contract, sender: seller})]).
+    execute(() => {
+      contract.optInToAsset(asset, 
+        ctx.any.txn.payment({
+          sender: seller,
+          receiver: testApp.address,
+          amount: optInMbr
+        })
+      )
+    })
+
+     expect(ctx.txn.lastGroup.lastItxnGroup().getAssetTransferInnerTxn().assetAmount).
+        toEqual(0);
+    expect(ctx.txn.lastGroup.getItxnGroup().getAssetTransferInnerTxn().xferAsset).
+        toEqual(asset); //il mbr
+    expect(ctx.txn.lastGroup.getItxnGroup().getAssetTransferInnerTxn().assetSender===testApp.address).
+        toEqual(true); //dato dal seller
+    expect(ctx.txn.lastGroup.getItxnGroup().getAssetTransferInnerTxn().assetReceiver===testApp.address).
+        toEqual(true);
+
+
+  })
+
+  //receiver of the payment is not the contract
+  test('optInShoulFailIfReceiverOfMbrIsNotContract', async () => {
+
+     const contract = ctx.contract.create(TicketingPlatform);
+    const asset = ctx.any.asset({decimals: TEST_DECIMALS});
+    const seller = ctx.any.account({balance: 2_000_000});
+    const other = ctx.any.account();
+    
+    
+    const price = new arc4.UintN64(1_234);
+    
+    //arrange
+    const testApp = ctx.ledger.getApplicationForContract(contract);
+
+    
+    expect(() => {
+      contract.optInToAsset(asset, 
+        ctx.any.txn.payment({
+          sender: seller,
+          receiver: other, //dest sbagliato
+          amount: optInMbr
+        })
+      )
+    }).toThrowError('receiver of the payment is not the contract');
+
+
+  })
+
+  //minimum balance requirement for opt in is not met
+  test('optInShouldFailIfPaymentAmountTooLow', async () => {
+
+      const contract = ctx.contract.create(TicketingPlatform);
+    const asset = ctx.any.asset({decimals: TEST_DECIMALS});
+    const seller = ctx.any.account({balance: 2_000_000});
+    const other = ctx.any.account();
+    
+    
+    const price = new arc4.UintN64(1_234);
+    
+    //arrange
+    const testApp = ctx.ledger.getApplicationForContract(contract);
+
+    
+    expect(() => {
+      contract.optInToAsset(asset, 
+        ctx.any.txn.payment({
+          sender: seller,
+          receiver: testApp.address, 
+          amount: optInMbr - 1 //quantita' troppo bassa
+        })
+      )
+    }).toThrowError('minimum balance requirement for opt in is not met');
+
+  })
  
-  test('newListingSucess', ()=> {
+  test('newListingSuccess', ()=> {
     
     const contract = ctx.contract.create(TicketingPlatform);
     const asset = ctx.any.asset({decimals: TEST_DECIMALS});
