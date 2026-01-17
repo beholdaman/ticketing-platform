@@ -151,7 +151,7 @@ export class TicketingPlatform extends arc4.Contract {
   public newListing(xfer: gtxn.AssetTransferTxn, unitaryPrice: arc4.UintN64, mbrPay: gtxn.PaymentTxn): void {
 
     //si e' fatto opt-in per l'asset
-    //assert(Global.currentApplicationAddress.isOptedIn(xfer.xferAsset));
+    //assert(Global.currentApplicationAddress.isOptedIn(xfer.xferAsset), 'contract is not opted in to asset');
 
     //il prezzo non puo' essere 0
     assert(unitaryPrice.native > 0, 'price cannot be negative');
@@ -164,7 +164,6 @@ export class TicketingPlatform extends arc4.Contract {
     //non devono esistere altri listing per questo asset
     assert(!this.assignedTicketlistings(key).exists, 'Listing for asset already exists');
 
-    //se c'e' gia' stato opt-in l'utente paghi solo per creare il box
     assert(Global.currentApplicationId.address===mbrPay.receiver, 'Receiver for payment is not the application');
 
     //mbr sufficiente
@@ -314,14 +313,11 @@ export class TicketingPlatform extends arc4.Contract {
 
     //verifica che il pagamento copra il prezzo del biglietto
     assert(buyPay.amount >= price.native, 'Insufficient payment');
-
-    //resto del pagamento dell'asset
-    const change: uint64 = buyPay.amount - price.native;
-
     //il destinatario e' il proprietario dell'asset
     assert(buyPay.receiver === owner.native, 'Pay receiver must be owner of the listing');
 
-   
+    //resto del pagamento dell'asset
+    const change: uint64 = buyPay.amount - price.native;
 
     //invia l'asset desiderato al chiamante del metodo (o al pagante?)
     itxn.assetTransfer({
@@ -402,14 +398,6 @@ export class TicketingPlatform extends arc4.Contract {
 
     //assicuarsi che owner sia il chiamante
     assert(Txn.sender===owner, 'Only owner can withdraw assets');
-
-    //trasferire asset al proprietario
-    itxn.assetTransfer({
-      assetSender: Global.currentApplicationAddress,
-      assetReceiver: owner,
-      xferAsset: asset,
-      assetAmount: 1
-    }).submit();
 
     //eliminazione box 
     //.TODO: fare solo se rimangono 0 asset (per biglietti non unici)

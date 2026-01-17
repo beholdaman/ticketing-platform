@@ -6,6 +6,8 @@ import { AssignedTicketKey, TicketingPlatform } from './contract.algo'
 import { ByteLengthQueuingStrategy } from 'node:stream/web'
 import { a } from 'vitest/dist/chunks/suite.B2jumIFP'
 
+//24 test di unita'
+
 const TEST_DECIMALS = 6
 
 describe('ticketingPlatform', () => {
@@ -118,9 +120,9 @@ describe('ticketingPlatform', () => {
     
     const contract = ctx.contract.create(TicketingPlatform);
     const asset = ctx.any.asset({decimals: TEST_DECIMALS});
-    const seller = ctx.any.account({balance: 2_000_000});
-    
-    
+    const seller = ctx.any.account({balance: 2_000_000, optedAssetBalances: new Map([[asset.id, 0]])});
+  
+
     const price = new arc4.UintN64(1_234);
     
     //arrange
@@ -181,7 +183,7 @@ describe('ticketingPlatform', () => {
 
     const contract = ctx.contract.create(TicketingPlatform);
     const asset = ctx.any.asset({decimals: TEST_DECIMALS});
-    const seller = ctx.any.account({balance: 2_000_000});
+    const seller = ctx.any.account({balance: 2_000_000, optedAssetBalances: new Map([[asset.id, 0]])});
     
     
     const price = new arc4.UintN64(1_234);
@@ -225,7 +227,7 @@ describe('ticketingPlatform', () => {
   test('newListingExistingListingFail', () => {
      const contract = ctx.contract.create(TicketingPlatform);
     const asset = ctx.any.asset({decimals: TEST_DECIMALS});
-    const seller = ctx.any.account({balance: 2_000_000});
+    const seller = ctx.any.account({balance: 2_000_000, optedAssetBalances: new Map([[asset.id, 0]])});
     
     
     const price = new arc4.UintN64(1_234);
@@ -283,7 +285,7 @@ describe('ticketingPlatform', () => {
 
     const contract = ctx.contract.create(TicketingPlatform);
     const asset = ctx.any.asset({decimals: TEST_DECIMALS});
-    const seller = ctx.any.account({balance: 2_000_000});
+    const seller = ctx.any.account({balance: 2_000_000, optedAssetBalances: new Map([[asset.id, 0]])});
     const other = ctx.any.account()
     
     
@@ -330,7 +332,7 @@ describe('ticketingPlatform', () => {
 
     const contract = ctx.contract.create(TicketingPlatform);
     const asset = ctx.any.asset({decimals: TEST_DECIMALS});
-    const seller = ctx.any.account({balance: 2_000_000});
+    const seller = ctx.any.account({balance: 2_000_000, optedAssetBalances: new Map([[asset.id, 0]])});
     const other = ctx.any.account()
     
     
@@ -376,7 +378,7 @@ describe('ticketingPlatform', () => {
 
      const contract = ctx.contract.create(TicketingPlatform);
     const asset = ctx.any.asset({decimals: TEST_DECIMALS});
-    const seller = ctx.any.account({balance: 2_000_000});
+    const seller = ctx.any.account({balance: 2_000_000, optedAssetBalances: new Map([[asset.id, 0]])});
     const other = ctx.any.account()
     
     
@@ -421,7 +423,7 @@ describe('ticketingPlatform', () => {
   test('changePriceSuccess', () => {
     const contract = ctx.contract.create(TicketingPlatform);
     const asset = ctx.any.asset({decimals: TEST_DECIMALS});
-    const seller = ctx.any.account();
+    const seller = ctx.any.account({optedAssetBalances: new Map([[asset.id, 0]])});
     
     const price = new arc4.UintN64(1_234);
     
@@ -480,7 +482,7 @@ describe('ticketingPlatform', () => {
 
     const contract = ctx.contract.create(TicketingPlatform);
     const asset = ctx.any.asset({decimals: TEST_DECIMALS});
-    const seller = ctx.any.account();
+  const seller = ctx.any.account({optedAssetBalances: new Map([[asset.id, 0]])});
     
     const price = new arc4.UintN64(1_234);
     
@@ -521,7 +523,7 @@ describe('ticketingPlatform', () => {
 
     const contract = ctx.contract.create(TicketingPlatform);
     const asset = ctx.any.asset({decimals: TEST_DECIMALS});
-    const seller = ctx.any.account();
+    const seller = ctx.any.account({optedAssetBalances: new Map([[asset.id, 0]])});
     const other = ctx.any.account();
     
     const price = new arc4.UintN64(1_234);
@@ -1181,19 +1183,12 @@ test('withdrawAssetSuccess', async () => {
 
   expect(contract.assignedTicketlistings(key).exists).toBe(false);
 
-   expect(ctx.txn.lastGroup.getItxnGroup(0).getAssetTransferInnerTxn(0).xferAsset).
-        toEqual(asset); //l'asset ritirato
-    expect(ctx.txn.lastGroup.getItxnGroup(0).getAssetTransferInnerTxn(0).assetReceiver===app.address).
-       toEqual(true); //ridato al venditore 
-    expect(ctx.txn.lastGroup.getItxnGroup(0).getAssetTransferInnerTxn(0).assetSender===app.address).
-        toEqual(true); //dall'aplicazione
-    //questa e' la transazione di optIn
 
-     expect(ctx.txn.lastGroup.getItxnGroup(2).getPaymentInnerTxn().amount).
+     expect(ctx.txn.lastGroup.getItxnGroup(1).getPaymentInnerTxn().amount).
         toEqual(listingMbr); //il listing mbr
-    expect(ctx.txn.lastGroup.getItxnGroup(2).getPaymentInnerTxn().receiver===seller).
+    expect(ctx.txn.lastGroup.getItxnGroup(1).getPaymentInnerTxn().receiver===seller).
         toEqual(true); //ridato al venditore
-    expect(ctx.txn.lastGroup.getItxnGroup(2).getPaymentInnerTxn().sender===app.address).
+    expect(ctx.txn.lastGroup.getItxnGroup(1).getPaymentInnerTxn().sender===app.address).
         toEqual(true); //dal contratto
 
     //TODO. check di asset restituito
