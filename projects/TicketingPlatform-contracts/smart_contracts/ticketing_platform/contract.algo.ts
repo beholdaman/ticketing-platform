@@ -238,9 +238,27 @@ export class TicketingPlatform extends arc4.Contract {
       amount: this.listingBoxMbr()
     }).submit()
 
-
-
   }
+
+     
+  public isOptedInTo(asset: Asset): boolean {
+    return Global.currentApplicationAddress.isOptedIn(asset);
+  }
+
+  public getBoxValue(asset: Asset): AssignedTicketValue {
+    const key = new AssignedTicketKey({
+      asset: new arc4.UintN64(asset.id)
+    })
+    return this.assignedTicketlistings(key).value;
+  }
+
+  public boxExists(asset: Asset): boolean {
+    const key = new AssignedTicketKey({
+      asset: new arc4.UintN64(asset.id)
+    })
+    return this.assignedTicketlistings(key).exists
+  }
+
 
  
  
