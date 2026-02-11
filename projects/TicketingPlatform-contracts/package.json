@@ -13,7 +13,9 @@
     "format": "prettier --write .",
     "test": "vitest run --coverage",
     "test:watch": "vitest watch",
-    "check-types": "tsc --noEmit"
+    "check-types": "tsc --noEmit",
+    "cli": "ts-node-dev --transpile-only -r dotenv/config cli/index.ts",
+    "platform": "ts-node -r dotenv/config cli/index.ts"
   },
   "engines": {
     "node": ">=22.0",
