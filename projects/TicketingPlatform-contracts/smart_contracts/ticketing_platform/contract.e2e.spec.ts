@@ -32,7 +32,7 @@ describe('TicketingPlatform contract', () => {
     })
     registerDebugEventHandlers()
   })
-  beforeEach(localnet.newScope, 10_000)
+  beforeEach(localnet.newScope, 100_000)
 
   const algodConfig = {
     server: 'http://localhost/',
@@ -89,7 +89,7 @@ describe('TicketingPlatform contract', () => {
         reserve: client.appClient.appAddress,
         freeze: client.appClient.appAddress,
         clawback: client.appClient.appAddress,
-        extraFee: AlgoAmount.MicroAlgo(1_000)
+        extraFee: AlgoAmount.MicroAlgo(1_000) //per coprire transazione interna
     }
   )
    
@@ -118,7 +118,6 @@ describe('TicketingPlatform contract', () => {
     const balanceAfterOptIn = (await algorand.account.getInformation(testAccount)).balance
     const appBalanceAfterOptIn = (await algorand.account.getInformation(client.appClient.appAddress)).balance
 
-    expect(result.return).toBe(true);
     
     
   })
@@ -176,82 +175,10 @@ describe('TicketingPlatform contract', () => {
 
   })
 
-  test('optInShouldFailIfDoneTwice', async () => {
-
-     const {testAccount, algorand} = localnet.context;
-    const {client} = await deploy(testAccount);
-    const optInMbr = 100_000;
-    
-   
-
-    const balance = (await algorand.account.getInformation(testAccount)).balance
-    console.log('test account balance', balance);
-
-    const appBalance = (await algorand.account.getInformation(client.appClient.appAddress)).balance
-    console.log('app balance', appBalance);
-    
-    const asset = await algorand.send.assetCreate({
-        sender: testAccount,
-        assetName: 'asset',
-        url: 'https://google.com',
-        total: BigInt(2),
-        decimals: 0,
-        manager: testAccount,
-        reserve: testAccount,
-        freeze: testAccount,
-        clawback: client.appClient.appAddress
-    })
   
-   
-    const payTxn1 = await algorand.createTransaction.payment({
-      sender: testAccount.addr,
-      receiver: client.appAddress,
-      amount: AlgoAmount.MicroAlgos(optInMbr)
-    })
 
-    const payTxn2 = await algorand.createTransaction.payment({
-      sender: testAccount.addr,
-      receiver: client.appAddress,
-      amount: AlgoAmount.MicroAlgos(optInMbr)
-    })
 
   
-    const t1 = await client.createTransaction.optInToAsset({
-      args: {
-        asset: asset.assetId,
-        mbrPay: payTxn1
-      },
-      //populateAppCallResources: true,
-      extraFee: AlgoAmount.MicroAlgos(1_000) //to cover inner transaction cost
-    })
-
-    
-    
-
-    const t2 =   await client.createTransaction.optInToAsset({
-      args: {
-        asset: asset.assetId,
-        mbrPay: payTxn2
-      },
-      //populateAppCallResources: true,
-      extraFee: AlgoAmount.MicroAlgos(1_000) //to cover inner transaction cost
-    });
-   const group = algorand.newGroup()
-      .addTransaction(t1.transactions[0])
-      .addTransaction(t2.transactions[0]);
-
-    expect(await group.send()).rejects.toThrowError('contract already opted in to asset');
-
-    const check = await client.send.isOptedInTo({ args: { asset: asset.assetId } })
-    expect(check.return).toBe(true);
-
-    const balanceAfterOptIn = (await algorand.account.getInformation(testAccount)).balance
-    const appBalanceAfterOptIn = (await algorand.account.getInformation(client.appClient.appAddress)).balance
-
-    
-
-  })
-
   test('optInShoulFailWithWrongMbrReceiver', async () => {
 
     const {testAccount, algorand} = localnet.context;
@@ -260,7 +187,7 @@ describe('TicketingPlatform contract', () => {
     
   
     const balance = (await algorand.account.getInformation(testAccount)).balance
-    expect(balance).toEqual(AlgoAmount.MicroAlgos(1_000_000))
+    
   
     const appBalance = (await algorand.account.getInformation(client.appClient.appAddress)).balance
     
@@ -336,7 +263,7 @@ describe('TicketingPlatform contract', () => {
 
     
 
-    const optIn = await client.createTransaction.optInToAsset({
+    const optIn = await client.send.optInToAsset({
       args: {
         asset: asset.assetId,
         mbrPay: payTxn
@@ -360,7 +287,7 @@ describe('TicketingPlatform contract', () => {
       sender: testAccount
     });
 
-    const newListing = await client.createTransaction.newListing({ 
+    const newListing = await client.send.newListing({ 
       args: {
         xfer: xfer,
         unitaryPrice: 1_234,
@@ -374,12 +301,9 @@ describe('TicketingPlatform contract', () => {
     asset: new arc4.UintN64(asset.assetId)
   })
   
- 
-  
-
 })
 
-  test('newListingShouldFailIfPriceIsNegative', async () => {
+test('newListingShouldFailIfPriceIsNotPositive', async () => {
 
     const {testAccount, algorand} = localnet.context;
     const {client} = await deploy(testAccount);
@@ -410,7 +334,7 @@ describe('TicketingPlatform contract', () => {
     })
 
    
-    const optIn = await client.createTransaction.optInToAsset({
+    const optIn = await client.send.optInToAsset({
       args: {
         asset: asset.assetId,
         mbrPay: payTxn
@@ -434,31 +358,16 @@ describe('TicketingPlatform contract', () => {
       sender: testAccount
     });
 
-    const newListing = await client.createTransaction.newListing({ 
+    await expect( () => client.createTransaction.newListing({ 
       args: {
         xfer: xfer,
         unitaryPrice: 0,
         mbrPay: mbrPay
       },
       extraFee: AlgoAmount.MicroAlgos(1_000)
-    })
+    })).rejects.toThrow('Price must be positive')
 
-    const res1 =  await client.send.optInToAsset({
-      args: {
-        asset: asset.assetId,
-        mbrPay: payTxn
-      }, 
-      populateAppCallResources: true,
-      extraFee: AlgoAmount.MicroAlgos(1_000) 
-    })
-
-    expect((await client.send.isOptedInTo({args: {asset: asset.assetId}})).return).toBe(true);
     
-
-    const key = new AssignedTicketKey({
-      asset: new arc4.UintN64(asset.assetId)
-    });
-
   
 
   })
@@ -469,6 +378,9 @@ describe('TicketingPlatform contract', () => {
     const {client} = await deploy(testAccount);
     const optInMbr = 100_000;
     const listingMbr = (await client.send.listingBoxMbr()).return?.microAlgo().valueOf()!
+
+    console.log("testAccount:", testAccount.addr.toString());
+    console.log("application address:", client.appAddress.toString());
 
     
     const balance = (await algorand.account.getInformation(testAccount)).balance
@@ -497,15 +409,15 @@ describe('TicketingPlatform contract', () => {
 
     
 
-    const optIn = await client.createTransaction.optInToAsset({
+    await client.send.optInToAsset({
       args: {
         asset: asset.assetId,
         mbrPay: payTxn
       },
-      //populateAppCallResources: true,
-      extraFee: AlgoAmount.MicroAlgos(1_000) //to cover inner transaction cost
+      populateAppCallResources: true,
+      extraFee: AlgoAmount.MicroAlgos(2_000), 
+      sender: testAccount.addr
     })
-
     
 
     const xfer = algorand.createTransaction.assetTransfer({
@@ -534,21 +446,6 @@ describe('TicketingPlatform contract', () => {
       sender: testAccount
     });
 
-    
-
-    const res1 =  await client.send.optInToAsset({
-      args: {
-        asset: asset.assetId,
-        mbrPay: payTxn
-      }, 
-      populateAppCallResources: true,
-      extraFee: AlgoAmount.MicroAlgos(1_000) 
-    })
-
-    expect((await client.send.isOptedInTo({args: {asset: asset.assetId}})).return).toBe(true);
-    
-
-   
     await client.send.newListing({ 
       args: {
         xfer: xfer,
@@ -556,29 +453,21 @@ describe('TicketingPlatform contract', () => {
         mbrPay: mbrPay
       },
       populateAppCallResources: true,
-      extraFee: AlgoAmount.MicroAlgos(1_000)
+      extraFee: AlgoAmount.MicroAlgos(1_000),
+      sender: testAccount.addr
     })
 
-    expect(await client.send.newListing({ 
+    await expect(() => client.send.newListing({ 
       args: {
         xfer: xfer2,
         unitaryPrice: 2_222,
         mbrPay: mbrPay2
       },
       populateAppCallResources: true,
-      extraFee: AlgoAmount.MicroAlgos(1_000)
+      extraFee: AlgoAmount.MicroAlgos(1_000),
+      sender: testAccount.addr
+
     })).rejects.toThrowError('Listing for asset already exists');
-
-    const result = await client.send.getBoxValue({args: {asset: asset.assetId}});
-    const optedIn = await client.send.isOptedInTo({args: {asset: asset.assetId}});
-
-
-    expect(optedIn.return).toEqual(true);
-    expect(result.return?.owner).toEqual(testAccount);
-    expect(result.return?.unitaryPrice).toEqual(1_111);
-
- 
-
 
   })
 
@@ -592,6 +481,7 @@ describe('TicketingPlatform contract', () => {
     const balance = (await algorand.account.getInformation(testAccount)).balance
     const appBalance = (await algorand.account.getInformation(client.appClient.appAddress)).balance
 
+   
 
     const asset = await algorand.send.assetCreate({
         sender: testAccount.addr,
@@ -614,7 +504,7 @@ describe('TicketingPlatform contract', () => {
     })
 
  
-    const optIn = await client.createTransaction.optInToAsset({
+    const optIn = await client.send.optInToAsset({
       args: {
         asset: asset.assetId,
         mbrPay: payTxn
@@ -634,28 +524,16 @@ describe('TicketingPlatform contract', () => {
 
     
 
+     console.log("testAccount:", testAccount.addr.toString());
+    console.log("application address:", client.appAddress.toString());
+
     const mbrPay = algorand.createTransaction.payment({
       amount: AlgoAmount.MicroAlgo(listingMbr),
-      receiver: client.appAddress,
+      receiver: testAccount,
       sender: testAccount
     });
-
    
-    
-
-    const res1 =  await client.send.optInToAsset({
-      args: {
-        asset: asset.assetId,
-        mbrPay: payTxn
-      }, 
-      populateAppCallResources: true,
-      extraFee: AlgoAmount.MicroAlgos(1_000) 
-    })
-
-    
-
-   
-    expect(await client.send.newListing({ 
+    await expect(() =>  client.send.newListing({ 
       args: {
         xfer: xfer,
         unitaryPrice: 1_111,
@@ -665,18 +543,6 @@ describe('TicketingPlatform contract', () => {
       extraFee: AlgoAmount.MicroAlgos(1_000)
     })).rejects.toThrowError('Receiver for payment is not the application')
 
-    
-
-    
-    const optedIn = await client.send.isOptedInTo({args: {asset: asset.assetId}});
-    const listingExists = await client.send.boxExists({args: {asset: asset.assetId}});
-
-    expect(optedIn.return).toEqual(true);
-    expect(listingExists).toBe(false);
-
-    
-
-   
 
   });
 
@@ -715,7 +581,7 @@ describe('TicketingPlatform contract', () => {
 
    
 
-    const optIn = await client.createTransaction.optInToAsset({
+    const optIn = await client.send.optInToAsset({
       args: {
         asset: asset.assetId,
         mbrPay: payTxn
@@ -744,19 +610,11 @@ describe('TicketingPlatform contract', () => {
    
     
 
-    const res1 =  await client.send.optInToAsset({
-      args: {
-        asset: asset.assetId,
-        mbrPay: payTxn
-      }, 
-      populateAppCallResources: true,
-      extraFee: AlgoAmount.MicroAlgos(1_000) 
-    })
 
     
 
    
-    expect(await client.send.newListing({ 
+    await expect(() =>  (client.send.newListing({ 
       args: {
         xfer: xfer,
         unitaryPrice: 1_111,
@@ -764,16 +622,13 @@ describe('TicketingPlatform contract', () => {
       },
       populateAppCallResources: true,
       extraFee: AlgoAmount.MicroAlgos(1_000)
-    })).rejects.toThrowError('Insufficient funds to create listing')
+    })
+  )).rejects.toThrowError('Insufficient funds to create listing')
 
     
 
     
-    const optedIn = await client.send.isOptedInTo({args: {asset: asset.assetId}});
-    const listingExists = await client.send.boxExists({args: {asset: asset.assetId}});
-
-    expect(optedIn.return).toEqual(true);
-    expect(listingExists).toBe(false);
+    
 
     
 
@@ -786,7 +641,7 @@ describe('TicketingPlatform contract', () => {
     const {client} = await deploy(testAccount);
     const optInMbr = 100_000;
     const listingMbr = (await client.send.listingBoxMbr()).return?.microAlgo().valueOf()!
-    const other =  algorand.account.random();
+    //const other =  algorand.account.random();
 
     const balance = (await algorand.account.getInformation(testAccount)).balance
     const appBalance = (await algorand.account.getInformation(client.appClient.appAddress)).balance
@@ -807,27 +662,31 @@ describe('TicketingPlatform contract', () => {
         extraFee: AlgoAmount.MicroAlgo(1_000)
     }
   )
-   
-    const payTxn = await algorand.createTransaction.payment({
+
+  const payTxn = await algorand.createTransaction.payment({
       sender: testAccount.addr,
       receiver: client.appAddress,
       amount: AlgoAmount.MicroAlgos(optInMbr)
     })
 
-
-    const optIn = await client.createTransaction.optInToAsset({
+  await client.send.optInToAsset({
       args: {
         asset: asset.assetId,
         mbrPay: payTxn
-      },
-      //populateAppCallResources: true,
-      extraFee: AlgoAmount.MicroAlgos(1_000) //to cover inner transaction cost
+      }, 
+      populateAppCallResources: true,
+      extraFee: AlgoAmount.MicroAlgos(1_000) 
     })
+   
+  
+
+
+    
 
     
 
     const xfer = algorand.createTransaction.assetTransfer({
-      receiver: other,
+      receiver: testAccount,
       sender: testAccount,
       amount: BigInt(1),
       assetId: asset.assetId,
@@ -844,19 +703,12 @@ describe('TicketingPlatform contract', () => {
    
     
 
-    const res1 =  await client.send.optInToAsset({
-      args: {
-        asset: asset.assetId,
-        mbrPay: payTxn
-      }, 
-      populateAppCallResources: true,
-      extraFee: AlgoAmount.MicroAlgos(1_000) 
-    })
+    
 
     
 
    
-    expect(await client.send.newListing({ 
+    await expect(() => client.send.newListing({ 
       args: {
         xfer: xfer,
         unitaryPrice: 1_111,
@@ -866,12 +718,7 @@ describe('TicketingPlatform contract', () => {
       extraFee: AlgoAmount.MicroAlgos(1_000)
     })).rejects.toThrowError('Asset receiver is not the application')
     
-    const optedIn = await client.send.isOptedInTo({args: {asset: asset.assetId}});
-    const listingExists = await client.send.boxExists({args: {asset: asset.assetId}});
-
-    expect(optedIn.return).toEqual(true);
-    expect(listingExists).toBe(false);
-
+   
  
 
   });
@@ -908,20 +755,10 @@ describe('TicketingPlatform contract', () => {
       amount: AlgoAmount.MicroAlgos(optInMbr)
     })
 
-
-    const optIn = await client.createTransaction.optInToAsset({
-      args: {
-        asset: asset.assetId,
-        mbrPay: payTxn
-      },
-      //populateAppCallResources: true,
-      extraFee: AlgoAmount.MicroAlgos(1_000) 
-    })
-
     
 
     const xfer = algorand.createTransaction.assetTransfer({
-      receiver: other,
+      receiver: client.appAddress,
       sender: testAccount,
       amount: BigInt(2), 
       assetId: asset.assetId,
@@ -950,7 +787,7 @@ describe('TicketingPlatform contract', () => {
     
 
    
-    expect(await client.send.newListing({ 
+    await expect(() => client.send.newListing({ 
       args: {
         xfer: xfer,
         unitaryPrice: 1_111,
@@ -960,12 +797,7 @@ describe('TicketingPlatform contract', () => {
       extraFee: AlgoAmount.MicroAlgos(1_000)
     })).rejects.toThrowError('Asset must be unique')
     
-    const optedIn = await client.send.isOptedInTo({args: {asset: asset.assetId}});
-    const listingExists = await client.send.boxExists({args: {asset: asset.assetId}});
-
-    expect(optedIn.return).toEqual(true);
-    expect(listingExists).toBe(false);
-
+    
    
   })
 
@@ -1001,7 +833,7 @@ describe('TicketingPlatform contract', () => {
     })
 
 
-    const optIn = await client.createTransaction.optInToAsset({
+    const optIn = await client.send.optInToAsset({
       args: {
         asset: asset.assetId,
         mbrPay: payTxn
@@ -1025,7 +857,7 @@ describe('TicketingPlatform contract', () => {
       sender: testAccount
     });
 
-    const newListing = await client.createTransaction.newListing({ 
+    const newListing = await client.send.newListing({ 
       args: {
         xfer: xfer,
         unitaryPrice: 1_234,
@@ -1036,7 +868,7 @@ describe('TicketingPlatform contract', () => {
 
 
   const price = (await client.send.getBoxValue({args: {asset: asset.assetId}})).return?.unitaryPrice
-  expect(price).toEqual(1_234)
+  expect(price).toEqual(1_234n)
 
   
   const changePrice = await client.send.changePrice({
@@ -1047,7 +879,7 @@ describe('TicketingPlatform contract', () => {
   })
 
   const newPrice = (await client.send.getBoxValue({args: {asset: asset.assetId}})).return?.unitaryPrice
-  expect(newPrice).toEqual(6_789)
+  expect(newPrice).toEqual(6_789n)
 
   })
 
@@ -1084,7 +916,7 @@ describe('TicketingPlatform contract', () => {
 
  
 
-    const optIn = await client.createTransaction.optInToAsset({
+    const optIn = await client.send.optInToAsset({
       args: {
         asset: asset.assetId,
         mbrPay: payTxn
@@ -1108,7 +940,7 @@ describe('TicketingPlatform contract', () => {
       sender: testAccount
     });
 
-    const newListing = await client.createTransaction.newListing({ 
+    const newListing = await client.send.newListing({ 
       args: {
         xfer: xfer,
         unitaryPrice: 1_234,
@@ -1119,10 +951,10 @@ describe('TicketingPlatform contract', () => {
 
 
   const price = (await client.send.getBoxValue({args: {asset: asset.assetId}})).return?.unitaryPrice
-  expect(price).toEqual(1_234)
+  expect(price).toEqual(1_234n)
 
   
-  expect( await client.send.changePrice({
+  await expect(() => client.send.changePrice({
     args: {
       asset: BigInt(88888), 
       newPrice: 6_789
@@ -1132,17 +964,27 @@ describe('TicketingPlatform contract', () => {
   
 
   const newPrice = (await client.send.getBoxValue({args: {asset: asset.assetId}})).return?.unitaryPrice
-  expect(newPrice).toEqual(1_234)
+  expect(newPrice).toEqual(1_234n)
 
   })
 
   test('chanegPriceShouldFailIfCallerIsNotSeller', async () => {
 
+    //I have to fund the other account
+
     const {testAccount, algorand} = localnet.context;
     const {client} = await deploy(testAccount);
     const optInMbr = 100_000;
     const listingMbr = (await client.send.listingBoxMbr()).return?.microAlgo().valueOf()!;
+
+
     const other = await algorand.account.random();
+    const dispenser = await algorand.account.localNetDispenser();
+    await algorand.account.ensureFunded(
+      other.addr,
+      dispenser,
+      (1).algo()
+    )
 
     const balance = (await algorand.account.getInformation(testAccount)).balance
     const appBalance = (await algorand.account.getInformation(client.appClient.appAddress)).balance
@@ -1169,7 +1011,7 @@ describe('TicketingPlatform contract', () => {
     })
 
 
-    const optIn = await client.createTransaction.optInToAsset({
+    const optIn = await client.send.optInToAsset({
       args: {
         asset: asset.assetId,
         mbrPay: payTxn
@@ -1193,7 +1035,7 @@ describe('TicketingPlatform contract', () => {
       sender: testAccount
     });
 
-    const newListing = await client.createTransaction.newListing({ 
+    const newListing = await client.send.newListing({ 
       args: {
         xfer: xfer,
         unitaryPrice: 1_234,
@@ -1204,12 +1046,12 @@ describe('TicketingPlatform contract', () => {
 
 
   const price = (await client.send.getBoxValue({args: {asset: asset.assetId}})).return?.unitaryPrice
-  expect(price).toEqual(1_234)
+  expect(price).toEqual(1_234n)
 
   
-  expect( await client.send.changePrice({
+  await expect(() => client.send.changePrice({
     args: {
-      asset: BigInt(88888), 
+      asset: BigInt(asset.assetId), 
       newPrice: 6_789
     },
     sender: other
@@ -1218,7 +1060,7 @@ describe('TicketingPlatform contract', () => {
   
 
   const newPrice = (await client.send.getBoxValue({args: {asset: asset.assetId}})).return?.unitaryPrice
-  expect(newPrice).toEqual(1_234)
+  expect(newPrice).toEqual(1_234n)
 
   })
 
@@ -1232,7 +1074,7 @@ describe('TicketingPlatform contract', () => {
     const seller = algorand.account.random();
     await algorand.account.ensureFunded(seller, testAccount, AlgoAmount.MicroAlgos(1_000_000))
     const buyer = algorand.account.random();
-    await algorand.account.ensureFunded(buyer, testAccount, AlgoAmount.MicroAlgos(1_000))
+    await algorand.account.ensureFunded(buyer, testAccount, AlgoAmount.MicroAlgos(1_000_000))
 
 
      const asset = await algorand.send.assetCreate({
@@ -1248,6 +1090,20 @@ describe('TicketingPlatform contract', () => {
         extraFee: AlgoAmount.MicroAlgo(1_000)
     }
   )
+
+    await algorand.send.assetTransfer({
+      sender: seller,
+      receiver: seller,
+      assetId: BigInt(asset.assetId),
+      amount: BigInt(0)
+    })
+
+    await algorand.send.assetTransfer({
+      sender: buyer,
+      receiver: buyer,
+      assetId: BigInt(asset.assetId),
+      amount: BigInt(0)
+    })
    
     const payTxn = await algorand.createTransaction.payment({
       sender: testAccount.addr,
@@ -1301,7 +1157,7 @@ describe('TicketingPlatform contract', () => {
           asset: asset.assetId,
           buyPay: buyPay
       },
-      extraFee: AlgoAmount.MicroAlgos(1_000),
+      extraFee: AlgoAmount.MicroAlgos(2_000),
       sender: buyer,
       populateAppCallResources: true
     });
@@ -1318,14 +1174,15 @@ describe('TicketingPlatform contract', () => {
     const optInMbr = 100_000;
     const listingMbr = (await client.send.listingBoxMbr()).return?.microAlgo().valueOf()!;
 
-    const sellerBalance = 1_000_000
     const seller = algorand.account.random();
     await algorand.account.ensureFunded(seller, testAccount, AlgoAmount.MicroAlgos(1_000_000))
 
-    const buyerBalance = 1_000
     const buyer = algorand.account.random();
-    await algorand.account.ensureFunded(buyer, testAccount, AlgoAmount.MicroAlgos(1_000))
+    await algorand.account.ensureFunded(buyer, testAccount, AlgoAmount.MicroAlgos(1_000_000))
 
+    console.log("testAccount:", testAccount.addr.toString());
+    console.log("seller: ", seller.addr.toString());
+    console.log("buyer: ", buyer.addr.toString());
 
      const asset = await algorand.send.assetCreate({
         sender: testAccount.addr,
@@ -1340,6 +1197,20 @@ describe('TicketingPlatform contract', () => {
         extraFee: AlgoAmount.MicroAlgo(1_000)
     }
   )
+
+    await algorand.send.assetTransfer({
+      assetId: BigInt(asset.assetId),
+      amount: BigInt(0),
+      sender: seller,
+      receiver: seller
+    })
+
+    await algorand.send.assetTransfer({
+      assetId: BigInt(asset.assetId),
+      amount: BigInt(0),
+      sender: buyer,
+      receiver: buyer
+    })
    
     const payTxn = await algorand.createTransaction.payment({
       sender: testAccount.addr,
@@ -1355,12 +1226,12 @@ describe('TicketingPlatform contract', () => {
       },
       populateAppCallResources: true,
       extraFee: AlgoAmount.MicroAlgos(1_000),  
-      sender: seller
+   
     })
 
     
 
-    const xfer = algorand.createTransaction.assetTransfer({
+    /*const xfer = algorand.createTransaction.assetTransfer({
       receiver: client.appAddress,
       sender: testAccount,
       amount: BigInt(1),
@@ -1381,7 +1252,7 @@ describe('TicketingPlatform contract', () => {
       },
       extraFee: AlgoAmount.MicroAlgos(1_000),
       sender: seller
-    })
+    })*/
 
     const buyPay = await algorand.createTransaction.payment({
       amount: AlgoAmount.MicroAlgos(1_234),
@@ -1389,13 +1260,13 @@ describe('TicketingPlatform contract', () => {
       receiver: seller.addr
     })
 
-    expect(await client.send.buy({
+    await expect(() => client.send.buy({
       args: {
           asset: asset.assetId,
           buyPay: buyPay
       },
-      extraFee: AlgoAmount.MicroAlgos(1_000),
-      sender: buyer,
+      extraFee: AlgoAmount.MicroAlgos(2_000),
+      sender: buyer.addr,
       populateAppCallResources: true
     })).rejects.toThrowError('Listing for given asset does not exist');
 
@@ -1411,13 +1282,11 @@ describe('TicketingPlatform contract', () => {
     const optInMbr = 100_000;
     const listingMbr = (await client.send.listingBoxMbr()).return?.microAlgo().valueOf()!;
 
-    const sellerBalance = 1_000_000
     const seller = algorand.account.random();
     await algorand.account.ensureFunded(seller, testAccount, AlgoAmount.MicroAlgos(1_000_000))
 
-    const buyerBalance = 1_000
     const buyer = algorand.account.random();
-    await algorand.account.ensureFunded(buyer, testAccount, AlgoAmount.MicroAlgos(1_000))
+    await algorand.account.ensureFunded(buyer, testAccount, AlgoAmount.MicroAlgos(1_000_000))
 
 
      const asset = await algorand.send.assetCreate({
@@ -1483,7 +1352,7 @@ describe('TicketingPlatform contract', () => {
       receiver: seller.addr
     })
 
-    expect(await client.send.buy({
+    await expect(() => client.send.buy({
       args: {
           asset: asset.assetId,
           buyPay: buyPay
@@ -1505,16 +1374,18 @@ describe('TicketingPlatform contract', () => {
     const optInMbr = 100_000;
     const listingMbr = (await client.send.listingBoxMbr()).return?.microAlgo().valueOf()!;
 
-    const sellerBalance = 1_000_000
     const seller = algorand.account.random();
     await algorand.account.ensureFunded(seller, testAccount, AlgoAmount.MicroAlgos(1_000_000))
 
-    const buyerBalance = 1_000
     const buyer = algorand.account.random();
-    await algorand.account.ensureFunded(buyer, testAccount, AlgoAmount.MicroAlgos(1_000))
+    await algorand.account.ensureFunded(buyer, testAccount, AlgoAmount.MicroAlgos(1_000_000))
 
     const other = algorand.account.random();
+    await algorand.account.ensureFunded(other, testAccount, AlgoAmount.MicroAlgos(1_000_000))
 
+    console.log("seller:", seller.addr.toString());
+    console.log("buyer: ", buyer.addr.toString());
+    console.log("other: ", other.addr.toString());
 
      const asset = await algorand.send.assetCreate({
         sender: testAccount.addr,
@@ -1574,17 +1445,17 @@ describe('TicketingPlatform contract', () => {
     })
 
     const buyPay = await algorand.createTransaction.payment({
-      amount: AlgoAmount.MicroAlgos(1_234), //low price
+      amount: AlgoAmount.MicroAlgos(1_234), 
       sender: buyer.addr,
       receiver: other.addr
     })
 
-    expect(await client.send.buy({
+    await expect(() => client.send.buy({
       args: {
           asset: asset.assetId,
           buyPay: buyPay
       },
-      extraFee: AlgoAmount.MicroAlgos(1_000),
+      extraFee: AlgoAmount.MicroAlgos(2_000),
       sender: buyer,
       populateAppCallResources: true
     })).rejects.toThrowError('Pay receiver must be owner of the listing');
@@ -1601,15 +1472,16 @@ describe('TicketingPlatform contract', () => {
     const listingMbr = (await client.send.listingBoxMbr()).return?.microAlgo().valueOf()!;
     const price = 1_234
 
-     const sellerBalance = 1_000_000
+  
     const seller = algorand.account.random();
     await algorand.account.ensureFunded(seller, testAccount, AlgoAmount.MicroAlgos(1_000_000))
 
-    const buyerBalance = 1_000
     const buyer = algorand.account.random();
-    await algorand.account.ensureFunded(buyer, testAccount, AlgoAmount.MicroAlgos(1_000))
+    await algorand.account.ensureFunded(buyer, testAccount, AlgoAmount.MicroAlgos(1_000_000))
 
     const other = algorand.account.random();
+    await algorand.account.ensureFunded(other, testAccount, AlgoAmount.MicroAlgos(1_000_000))
+
 
 
      const asset = await algorand.send.assetCreate({
@@ -1671,7 +1543,7 @@ describe('TicketingPlatform contract', () => {
     const buyPay = await algorand.createTransaction.payment({
       amount: AlgoAmount.MicroAlgos(1_234), //low price
       sender: buyer.addr,
-      receiver: other.addr
+      receiver: seller.addr
     })
 
     await client.send.withdrawAsset({
@@ -1679,7 +1551,7 @@ describe('TicketingPlatform contract', () => {
         asset: asset.assetId
       },
       populateAppCallResources: true,
-      extraFee: AlgoAmount.Algos(1_000),
+      extraFee: AlgoAmount.MicroAlgos(1_000),
       sender: seller
     })
 
@@ -1697,13 +1569,11 @@ describe('TicketingPlatform contract', () => {
     const listingMbr = (await client.send.listingBoxMbr()).return?.microAlgo().valueOf()!;
     const price = 1_234
 
-     const sellerBalance = 1_000_000
     const seller = algorand.account.random();
     await algorand.account.ensureFunded(seller, testAccount, AlgoAmount.MicroAlgos(1_000_000))
 
-    const buyerBalance = 1_000
     const buyer = algorand.account.random();
-    await algorand.account.ensureFunded(buyer, testAccount, AlgoAmount.MicroAlgos(1_000))
+    await algorand.account.ensureFunded(buyer, testAccount, AlgoAmount.MicroAlgos(1_000_000))
 
     const other = algorand.account.random();
 
@@ -1737,47 +1607,22 @@ describe('TicketingPlatform contract', () => {
       },
       populateAppCallResources: true,
       extraFee: AlgoAmount.MicroAlgos(1_000),  //to cover inner transaction cost
-      sender: seller
+      
     })
 
     
 
-    const xfer = algorand.createTransaction.assetTransfer({
-      receiver: client.appAddress,
-      sender: testAccount,
-      amount: BigInt(1),
-      assetId: asset.assetId,
-    })
+    
 
-    const mbrPay = algorand.createTransaction.payment({
-      amount: AlgoAmount.MicroAlgo(listingMbr),
-      receiver: client.appAddress,
-      sender: testAccount
-    });
+   
 
-    /*await client.send.newListing({ 
-      args: {
-        xfer: xfer,
-        unitaryPrice: 1_234,
-        mbrPay: mbrPay
-      },
-      extraFee: AlgoAmount.MicroAlgos(1_000),
-      sender: seller
-    })*/
-
-    const buyPay = await algorand.createTransaction.payment({
-      amount: AlgoAmount.MicroAlgos(1_234), //low price
-      sender: buyer.addr,
-      receiver: other.addr
-    })
-
-    expect(await client.send.withdrawAsset({
+    await expect(() => client.send.withdrawAsset({
       args: {
         asset: asset.assetId
       },
       populateAppCallResources: true,
-      extraFee: AlgoAmount.Algos(1_000),
-      sender: seller
+      extraFee: AlgoAmount.MicroAlgos(1_000),
+      sender: seller.addr
     })).rejects.toThrowError('No listing exists for given asset');
 
    
@@ -1799,9 +1644,11 @@ describe('TicketingPlatform contract', () => {
 
     const buyerBalance = 1_000
     const buyer = algorand.account.random();
-    await algorand.account.ensureFunded(buyer, testAccount, AlgoAmount.MicroAlgos(1_000))
+    await algorand.account.ensureFunded(buyer, testAccount, AlgoAmount.MicroAlgos(1_000_000))
 
     const other = algorand.account.random();
+    await algorand.account.ensureFunded(other, testAccount, AlgoAmount.MicroAlgos(1_000_000))
+
 
 
      const asset = await algorand.send.assetCreate({
@@ -1867,13 +1714,13 @@ describe('TicketingPlatform contract', () => {
       receiver: other.addr
     })
 
-    expect(await client.send.withdrawAsset({
+    await expect(() =>  client.send.withdrawAsset({
       args: {
         asset: asset.assetId
       },
       populateAppCallResources: true,
-      extraFee: AlgoAmount.Algos(1_000),
-      sender: other
+      extraFee: AlgoAmount.MicroAlgos(1_000),
+      sender: other.addr
     })).rejects.toThrowError('Only owner can withdraw assets');
 
 

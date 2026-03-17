@@ -10,22 +10,20 @@ export function registerPurchaseCommands(program: Command) {
         .command("ticket <assetId> <price>")
         .description("Buy a ticket from a listing")
         .option("-a, --app <id>", "Application ID", process.env.APP_ID || "0")
-        .option("-m, --mnemonic <phrase>", "Sender mnemonic", process.env.MNEMONIC)
-        .action(async (assetId: string, price: string, options: any) => {
+        .option("-m, --mnemonic <phrase>", "Sender mnemonic")
+        .action(async (assetId: string, options: any) => {
             try {
                 const appId = parseInt(options.app);
                 const assetIdNum = parseInt(assetId);
-                const priceNum = BigInt(price);
 
                 if (isNaN(appId) || isNaN(assetIdNum)) throw new Error("Invalid IDs");
 
-                const mnemonic = options.mnemonic;
+                const mnemonic = options.mnemonic || process.env.MNEMONIC;
                 if (!mnemonic) throw new Error("MNEMONIC required");
 
                 const sender = algosdk.mnemonicToSecretKey(mnemonic);
                 const ctx = getClientContext(sender, appId);
 
-                console.log(`Purchasing ticket (asset ${assetIdNum}) for ${price} microAlgos`);
                 console.log("Note: Full transaction composition required");
                 console.log("This requires: payment transaction + asset transfer composition");
             } catch (error) {
@@ -39,7 +37,7 @@ export function registerPurchaseCommands(program: Command) {
         .command("free <assetId> <owner> <nonce> <quantity>")
         .description("Buy free access tickets")
         .option("-a, --app <id>", "Application ID", process.env.APP_ID || "0")
-        .option("-m, --mnemonic <phrase>", "Sender mnemonic", process.env.MNEMONIC)
+        .option("-m, --mnemonic <phrase>", "Sender mnemonic")
         .action(async (assetId: string, owner: string, nonce: string, quantity: string, options: any) => {
             try {
                 const appId = parseInt(options.app);
@@ -49,7 +47,7 @@ export function registerPurchaseCommands(program: Command) {
 
                 if (isNaN(appId) || isNaN(assetIdNum)) throw new Error("Invalid IDs");
 
-                const mnemonic = options.mnemonic;
+                const mnemonic = options.mnemonic || process.env.MNEMONIC;
                 if (!mnemonic) throw new Error("MNEMONIC required");
 
                 const sender = algosdk.mnemonicToSecretKey(mnemonic);
@@ -69,7 +67,7 @@ export function registerPurchaseCommands(program: Command) {
         .command("assets <assetId>")
         .description("Buy a ticket with another asset")
         .option("-a, --app <id>", "Application ID", process.env.APP_ID || "0")
-        .option("-m, --mnemonic <phrase>", "Sender mnemonic", process.env.MNEMONIC)
+        .option("-m, --mnemonic <phrase>", "Sender mnemonic")
         .option("-p, --payment-asset <id>", "Asset ID to pay with")
         .action(async (assetId: string, options: any) => {
             try {
@@ -78,7 +76,7 @@ export function registerPurchaseCommands(program: Command) {
 
                 if (isNaN(appId) || isNaN(assetIdNum)) throw new Error("Invalid IDs");
 
-                const mnemonic = options.mnemonic;
+                const mnemonic = options.mnemonic || process.env.MNEMONIC;
                 if (!mnemonic) throw new Error("MNEMONIC required");
 
                 const sender = algosdk.mnemonicToSecretKey(mnemonic);

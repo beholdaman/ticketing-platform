@@ -53,8 +53,7 @@ describe('ticketingPlatform', () => {
         toEqual(0);
     expect(ctx.txn.lastGroup.getItxnGroup().getAssetTransferInnerTxn().xferAsset).
         toEqual(asset); //il mbr
-    expect(ctx.txn.lastGroup.getItxnGroup().getAssetTransferInnerTxn().assetSender===testApp.address).
-        toEqual(true); //dato dal seller
+    
     expect(ctx.txn.lastGroup.getItxnGroup().getAssetTransferInnerTxn().assetReceiver===testApp.address).
         toEqual(true);
 
@@ -172,8 +171,7 @@ describe('ticketingPlatform', () => {
         toEqual(0);
     expect(ctx.txn.lastGroup.getItxnGroup().getAssetTransferInnerTxn().xferAsset).
         toEqual(asset); //il mbr
-    expect(ctx.txn.lastGroup.getItxnGroup().getAssetTransferInnerTxn().assetSender===testApp.address).
-        toEqual(true); //dato dal seller
+   
     expect(ctx.txn.lastGroup.getItxnGroup().getAssetTransferInnerTxn().assetReceiver===testApp.address).
         toEqual(true); //al contratto
           
@@ -471,8 +469,7 @@ describe('ticketingPlatform', () => {
         toEqual(0);
     expect(ctx.txn.lastGroup.getItxnGroup().getAssetTransferInnerTxn().xferAsset).
         toEqual(asset); //il mbr
-    expect(ctx.txn.lastGroup.getItxnGroup().getAssetTransferInnerTxn().assetSender===app.address).
-        toEqual(true); //dato dal seller
+   
     expect(ctx.txn.lastGroup.getItxnGroup().getAssetTransferInnerTxn().assetReceiver===app.address).
         toEqual(true); //al contratto
 
@@ -625,7 +622,7 @@ describe('ticketingPlatform', () => {
         toEqual(asset); //asset
     expect(ctx.txn.lastGroup.getItxnGroup(0).getAssetTransferInnerTxn().assetReceiver===buyer).
         toEqual(true); //al compratore
-    expect(ctx.txn.lastGroup.getItxnGroup(0).getAssetTransferInnerTxn().assetSender===seller).
+    expect(ctx.txn.lastGroup.getItxnGroup(0).getAssetTransferInnerTxn().assetSender===app.address).
         toEqual(true); //dal venditore
 
     expect(contract.assignedTicketlistings(key).exists).toBe(false);
@@ -704,7 +701,7 @@ describe('ticketingPlatform', () => {
         toEqual(1); //asset unico
     expect(ctx.txn.lastGroup.getItxnGroup(0).getAssetTransferInnerTxn().assetReceiver===buyer).
         toEqual(true); //dato al compratore
-    expect(ctx.txn.lastGroup.getItxnGroup(0).getAssetTransferInnerTxn().assetSender===seller).
+    expect(ctx.txn.lastGroup.getItxnGroup(0).getAssetTransferInnerTxn().assetSender===app.address).
         toEqual(true); //dal venditore
 
     expect(ctx.txn.lastGroup.getItxnGroup(1).getPaymentInnerTxn().amount).

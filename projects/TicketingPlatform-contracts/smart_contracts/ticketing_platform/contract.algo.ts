@@ -75,7 +75,6 @@ export class TicketingPlatform extends arc4.Contract {
     // (asset transfer vuota da contratto a contratto per l'asset desiderato)
     itxn.assetTransfer({
       xferAsset: asset,
-      assetSender: Global.currentApplicationAddress,
       assetReceiver: Global.currentApplicationAddress,
       assetAmount: 0,
       fee: 0
@@ -126,7 +125,7 @@ export class TicketingPlatform extends arc4.Contract {
   public changePrice(asset: Asset, newPrice: arc4.UintN64): void {
 
     //il nuovo prezzo non puo' essere 0
-    assert(newPrice.native > 0, 'Price cannot be negative');
+    assert(newPrice.native > 0, 'Price must be positive');
 
     //il prezzo puo' essere cambiato solo dal proprietario dell'asset
     const key = new AssignedTicketKey({
@@ -180,7 +179,7 @@ export class TicketingPlatform extends arc4.Contract {
     //invia l'asset desiderato al chiamante del metodo (o al pagante?)
     itxn.assetTransfer({
       xferAsset: asset,
-      assetSender: owner.native,
+      assetSender: Global.currentApplicationAddress,
       assetReceiver: Txn.sender,
       assetAmount: 1,
       fee: 0

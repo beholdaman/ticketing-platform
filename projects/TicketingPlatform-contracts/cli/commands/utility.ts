@@ -10,13 +10,13 @@ export function registerUtilityCommands(program: Command) {
         .command("balance")
         .description("Get contract balance")
         .option("-a, --app <id>", "Application ID", process.env.APP_ID || "0")
-        .option("-m, --mnemonic <phrase>", "Sender mnemonic", process.env.MNEMONIC)
+        .option("-m, --mnemonic <phrase>", "Sender mnemonic")
         .action(async (options: any) => {
             try {
                 const appId = parseInt(options.app);
                 if (isNaN(appId)) throw new Error("Invalid app ID");
 
-                const mnemonic = options.mnemonic;
+                const mnemonic = options.mnemonic || process.env.MNEMONIC;
                 if (!mnemonic) throw new Error("MNEMONIC required");
 
                 const sender = algosdk.mnemonicToSecretKey(mnemonic);
@@ -39,7 +39,7 @@ export function registerUtilityCommands(program: Command) {
         .command("opted-in <assetId>")
         .description("Check if contract is opted in to an asset")
         .option("-a, --app <id>", "Application ID", process.env.APP_ID || "0")
-        .option("-m, --mnemonic <phrase>", "Sender mnemonic", process.env.MNEMONIC)
+        .option("-m, --mnemonic <phrase>", "Sender mnemonic")
         .action(async (assetId: string, options: any) => {
             try {
                 const appId = parseInt(options.app);
@@ -47,7 +47,7 @@ export function registerUtilityCommands(program: Command) {
 
                 if (isNaN(appId) || isNaN(assetIdNum)) throw new Error("Invalid IDs");
 
-                const mnemonic = options.mnemonic;
+                const mnemonic = options.mnemonic || process.env.MNEMONIC;
                 if (!mnemonic) throw new Error("MNEMONIC required");
 
                 const sender = algosdk.mnemonicToSecretKey(mnemonic);
@@ -75,7 +75,7 @@ export function registerUtilityCommands(program: Command) {
         .command("box-value <assetId>")
         .description("Get the box value for an asset listing")
         .option("-a, --app <id>", "Application ID", process.env.APP_ID || "0")
-        .option("-m, --mnemonic <phrase>", "Sender mnemonic", process.env.MNEMONIC)
+        .option("-m, --mnemonic <phrase>", "Sender mnemonic")
         .action(async (assetId: string, options: any) => {
             try {
                 const appId = parseInt(options.app);
@@ -83,7 +83,7 @@ export function registerUtilityCommands(program: Command) {
 
                 if (isNaN(appId) || isNaN(assetIdNum)) throw new Error("Invalid IDs");
 
-                const mnemonic = options.mnemonic;
+                const mnemonic = options.mnemonic || process.env.MNEMONIC;
                 if (!mnemonic) throw new Error("MNEMONIC required");
 
                 const sender = algosdk.mnemonicToSecretKey(mnemonic);
@@ -114,14 +114,14 @@ export function registerUtilityCommands(program: Command) {
         .command("mbr")
         .description("Get MBR (Minimum Balance Requirement) costs")
         .option("-a, --app <id>", "Application ID", process.env.APP_ID || "0")
-        .option("-m, --mnemonic <phrase>", "Sender mnemonic", process.env.MNEMONIC)
+        .option("-m, --mnemonic <phrase>", "Sender mnemonic")
         .option("-t, --type <type>", "Type: 'listing' or 'free' (default: listing)", "listing")
         .action(async (options: any) => {
             try {
                 const appId = parseInt(options.app);
                 if (isNaN(appId)) throw new Error("Invalid app ID");
 
-                const mnemonic = options.mnemonic;
+                const mnemonic = options.mnemonic || process.env.MNEMONIC;
                 if (!mnemonic) throw new Error("MNEMONIC required");
 
                 const sender = algosdk.mnemonicToSecretKey(mnemonic);

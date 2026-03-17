@@ -9,13 +9,13 @@ export function registerNftCommands(program: Command) {
         .command("mint <name> <link>")
         .description("Mint a new NFT ticket")
         .option("-a, --app <id>", "Application ID", process.env.APP_ID || "0")
-        .option("-m, --mnemonic <phrase>", "Sender mnemonic", process.env.MNEMONIC)
+        .option("-m, --mnemonic <phrase>", "Sender mnemonic")
         .action(async (name: string, link: string, options: any) => {
             try {
                 const appId = parseInt(options.app);
                 if (isNaN(appId)) throw new Error("Invalid app ID");
 
-                const mnemonic = options.mnemonic;
+                const mnemonic = options.mnemonic || process.env.MNEMONIC;
                 if (!mnemonic) throw new Error("MNEMONIC required");
 
                 const sender = algosdk.mnemonicToSecretKey(mnemonic);

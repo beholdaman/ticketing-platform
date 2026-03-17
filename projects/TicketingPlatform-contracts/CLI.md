@@ -28,7 +28,7 @@ export APP_ID=12345
 npm run platform -- [GLOBAL OPTIONS] <command> [command options]
 ```
 
-**Opzioni:**
+**Opzioni Globali:**
 - `-a, --app <id>`: Application ID (required)
 - `-m, --mnemonic <phrase>`: Sender mnemonic (or use MNEMONIC env var)
 
@@ -94,12 +94,11 @@ npm run platform -- -a 12345 listing optin 1000
 #### Comprare un biglietto
 
 ```bash
-npm run platform -- -a 12345 buy ticket 1000 5000000
+npm run platform -- -a 12345 buy ticket 1000 
 ```
 
 **Arguments:**
 - `assetId`: ID dell'asset da acquistare
-- `price`: prezzo in microAlgo
 
 
 
@@ -141,7 +140,7 @@ Returns:
 npm run platform -- -a 12345 info box-exists 1000
 ```
 
-**Arguments:**
+**Arguments:*
 - `assetId`: Asset ID
 
 #### Ottieni minimum balance requirement
